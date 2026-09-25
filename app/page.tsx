@@ -1,69 +1,81 @@
-import Image from "next/image";
+'use client';
+
+import React, { useState } from 'react';
+import Navbar from '@/components/Navbar';
+import QuickEmergencyBar from '@/components/QuickEmergencyBar';
+import Hero from '@/components/Hero';
+import InteractiveEcosystem from '@/components/InteractiveEcosystem';
+import InclusionSection from '@/components/InclusionSection';
+import SpecificationsViewer from '@/components/SpecificationsViewer';
+import Footer from '@/components/Footer';
+import VoiceExperienceModal from '@/components/VoiceExperienceModal';
+import AuthModal from '@/components/AuthModal';
+import { SupportedLang } from '@/lib/translations';
+
+interface UserSession {
+  name: string;
+  role: string;
+  id: string;
+}
 
 export default function Home() {
+  const [currentLang, setCurrentLang] = useState<SupportedLang>('fr');
+  const [voiceModalOpen, setVoiceModalOpen] = useState<boolean>(false);
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors selection:bg-teal-500 selection:text-white">
+      {/* 1. Barre de Navigation avec sélecteur de langues locales & statut réseau internet */}
+      <Navbar
+        currentLang={currentLang}
+        onLanguageChange={setCurrentLang}
+        onToggleVoiceModal={() => setVoiceModalOpen(true)}
+        onOpenAuthModal={() => setAuthModalOpen(true)}
+        currentUser={currentUser}
+        onLogout={() => setCurrentUser(null)}
+      />
+
+      {/* 2. Barre d'Urgence Immédiate SAMU Bénin 112 */}
+      <QuickEmergencyBar currentLang={currentLang} />
+
+      {/* 3. Section Hero d'accueil & Impact */}
+      <main className="flex-1">
+        <Hero
+          currentLang={currentLang}
+          onOpenVoiceModal={() => setVoiceModalOpen(true)}
+          onOpenAuthModal={() => setAuthModalOpen(true)}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        {/* 4. Écosystème Interactif traduit (DMP, Pharmacies de garde, Téléexpertise, Épidémies) */}
+        <InteractiveEcosystem currentLang={currentLang} />
+
+        {/* 5. Section Dédiée à l'Inclusion & Accessibilité (WCAG AAA, Vocal, Offline) traduite */}
+        <InclusionSection
+          currentLang={currentLang}
+          onOpenVoiceModal={() => setVoiceModalOpen(true)}
+        />
+
+        {/* 6. Vue sur le Dossier Complet de Spécifications Logicielles */}
+        <SpecificationsViewer />
       </main>
+
+      {/* 7. Pied de page Institutionnel Républicain */}
+      <Footer />
+
+      {/* 8. Modal Interactif d'Assistance Vocale en Langues Nationales */}
+      <VoiceExperienceModal
+        isOpen={voiceModalOpen}
+        onClose={() => setVoiceModalOpen(false)}
+        initialLang={currentLang}
+      />
+
+      {/* 9. Modal de Connexion / Espace Santé Sécurisé (NPI, Médecin, Pharmacie) */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onLoginSuccess={(user) => setCurrentUser(user)}
+      />
     </div>
   );
 }
