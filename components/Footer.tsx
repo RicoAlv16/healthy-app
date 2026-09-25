@@ -1,8 +1,15 @@
 'use client';
 
 import React from 'react';
+import { translations, SupportedLang } from '@/lib/translations';
 
-export default function Footer() {
+interface FooterProps {
+  currentLang: SupportedLang;
+}
+
+export default function Footer({ currentLang }: FooterProps) {
+  const t = translations[currentLang]?.footer || translations.fr.footer;
+
   return (
     <footer className="bg-slate-950 text-white border-t border-slate-800">
       {/* Ligne Tricolore République du Bénin */}
@@ -26,14 +33,14 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-sm">
-              Plateforme numérique souveraine, collaborative et universellement accessible de suivi des patients et de coordination des soins en République du Bénin.
+              {t.desc}
             </p>
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex flex-wrap items-center gap-2 pt-2">
               <span className="text-[11px] font-bold px-2.5 py-1 rounded bg-teal-950 text-teal-300 border border-teal-800">
-                Souveraineté Numérique Bénin
+                {t.badgeSovereign}
               </span>
               <span className="text-[11px] font-bold px-2.5 py-1 rounded bg-slate-900 text-slate-400 border border-slate-800">
-                Données hébergées localement
+                {t.badgeLocalData}
               </span>
             </div>
           </div>
@@ -41,27 +48,27 @@ export default function Footer() {
           {/* Numéros d'Urgence Nationaux */}
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-teal-400 mb-4">
-              Urgences Bénin
+              {t.titleEmergency}
             </h4>
             <ul className="space-y-2 text-xs text-slate-400">
               <li>
                 <a href="tel:112" className="hover:text-white font-bold text-rose-400 transition-colors">
-                  🚨 SAMU National : 112
+                  {t.samu}
                 </a>
               </li>
               <li>
                 <a href="tel:136" className="hover:text-white transition-colors">
-                  📞 Ligne Verte Santé : 136
+                  {t.greenLine}
                 </a>
               </li>
               <li>
                 <a href="tel:118" className="hover:text-white transition-colors">
-                  🚒 Sapeurs-Pompiers : 118
+                  {t.firefighters}
                 </a>
               </li>
               <li>
                 <a href="tel:117" className="hover:text-white transition-colors">
-                  👮 Police Républicaine : 117
+                  {t.police}
                 </a>
               </li>
             </ul>
@@ -70,29 +77,29 @@ export default function Footer() {
           {/* Partenaires & Écosystème */}
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-teal-400 mb-4">
-              Institutions & Agences
+              {t.titleInstitutions}
             </h4>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li>Ministère de la Santé du Bénin</li>
-              <li>ASIN (Systèmes d&apos;Information)</li>
-              <li>ANSSP (Soins de Santé Primaires)</li>
-              <li>ANIP (Identité Citoyenne - NPI)</li>
-              <li>Projet ARCH / Assurance Santé</li>
-              <li>ABMed (Agence du Médicament)</li>
+              <li>{t.inst1}</li>
+              <li>{t.inst2}</li>
+              <li>{t.inst3}</li>
+              <li>{t.inst4}</li>
+              <li>{t.inst5}</li>
+              <li>{t.inst6}</li>
             </ul>
           </div>
 
           {/* Accessibilité & Conformité */}
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-teal-400 mb-4">
-              Accessibilité & APDP
+              {t.titleA11y}
             </h4>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li>Conforme WCAG 2.1 niveau AAA</li>
-              <li>Synthèse vocale 4 langues béninoises</li>
-              <li>Mode Hors-Ligne (Offline-First)</li>
-              <li>Conforme Code du Numérique (APDP)</li>
-              <li>Secret Médical & Chiffrement AES-256</li>
+              <li>{t.a11y1}</li>
+              <li>{t.a11y2}</li>
+              <li>{t.a11y3}</li>
+              <li>{t.a11y4}</li>
+              <li>{t.a11y5}</li>
             </ul>
           </div>
 
@@ -100,9 +107,9 @@ export default function Footer() {
 
         {/* Ligne inférieure de copyright */}
         <div className="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© 2026 Care.bj • Développé dans le cadre du Challenge e-Santé Bénin.</p>
+          <p>{t.copyright}</p>
           <p className="flex items-center gap-1">
-            <span>Fait avec passion pour le système de santé du Bénin</span>
+            <span>{t.passionBadge}</span>
             <span>🇧🇯</span>
           </p>
         </div>

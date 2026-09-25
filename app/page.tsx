@@ -60,8 +60,8 @@ export default function Home() {
         <SpecificationsViewer />
       </main>
 
-      {/* 7. Pied de page Institutionnel Républicain */}
-      <Footer />
+      {/* 7. Pied de page Institutionnel Républicain traduit */}
+      <Footer currentLang={currentLang} />
 
       {/* 8. Modal Interactif d'Assistance Vocale en Langues Nationales */}
       <VoiceExperienceModal

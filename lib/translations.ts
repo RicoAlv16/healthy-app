@@ -8,6 +8,8 @@ export interface Translations {
     specs: string;
     networkOnline: string;
     networkOffline: string;
+    networkTooltipOnline: string;
+    networkTooltipOffline: string;
     voiceBtn: string;
     loginBtn: string;
     title: string;
@@ -96,21 +98,48 @@ export interface Translations {
     p4Desc: string;
     p4Badge: string;
   };
+  footer: {
+    desc: string;
+    badgeSovereign: string;
+    badgeLocalData: string;
+    titleEmergency: string;
+    samu: string;
+    greenLine: string;
+    firefighters: string;
+    police: string;
+    titleInstitutions: string;
+    inst1: string;
+    inst2: string;
+    inst3: string;
+    inst4: string;
+    inst5: string;
+    inst6: string;
+    titleA11y: string;
+    a11y1: string;
+    a11y2: string;
+    a11y3: string;
+    a11y4: string;
+    a11y5: string;
+    copyright: string;
+    passionBadge: string;
+  };
 }
 
 export const translations: Record<SupportedLang, Translations> = {
   fr: {
     nav: {
-      services: "Services & Rôles",
-      inclusion: "Accessibilité & Langues",
-      pharmacies: "Pharmacies de Garde",
-      specs: "Cahier des charges",
-      networkOnline: "Réseau Internet : Actif",
-      networkOffline: "Réseau : Mode Hors-Ligne (Stockage Local)",
-      voiceBtn: "Assistant Vocal",
-      loginBtn: "Connexion Espace Santé",
+      services: "Services",
+      inclusion: "Inclusion & Langues",
+      pharmacies: "Pharmacies",
+      specs: "Spécifications",
+      networkOnline: "Réseau",
+      networkOffline: "Hors-ligne",
+      networkTooltipOnline: "Réseau internet actif • Données synchronisées",
+      networkTooltipOffline: "Mode hors-ligne • Données sécurisées sur l'appareil",
+      voiceBtn: "Vocal",
+      loginBtn: "Mon Espace",
       title: "Care.bj",
-      subtitle: "Plateforme Nationale e-Santé Inclusive"
+      subtitle: "Plateforme Nationale e-Santé"
     },
     emergency: {
       label: "URGENCE VITALE BÉNIN",
@@ -194,21 +223,48 @@ export const translations: Record<SupportedLang, Translations> = {
       p4Title: "Connectivité Faible / 2G",
       p4Desc: "Architecture Offline-First (PWA). Poids initial < 150 Ko. Les consultations saisies en zone rurale sont synchronisées dès le retour du réseau.",
       p4Badge: "IndexedDB + Service Worker"
+    },
+    footer: {
+      desc: "Plateforme numérique souveraine, collaborative et universellement accessible de suivi des soins en République du Bénin.",
+      badgeSovereign: "Souveraineté Numérique Bénin",
+      badgeLocalData: "Données hébergées localement",
+      titleEmergency: "Urgences Bénin",
+      samu: "🚨 SAMU National : 112",
+      greenLine: "📞 Ligne Verte Santé : 136",
+      firefighters: "🚒 Sapeurs-Pompiers : 118",
+      police: "👮 Police Républicaine : 117",
+      titleInstitutions: "Institutions & Agences",
+      inst1: "Ministère de la Santé du Bénin",
+      inst2: "ASIN (Systèmes d'Information)",
+      inst3: "ANSSP (Soins Primaires)",
+      inst4: "ANIP (Identité Citoyenne - NPI)",
+      inst5: "Projet ARCH / Assurance Santé",
+      inst6: "ABMed (Agence du Médicament)",
+      titleA11y: "Accessibilité & APDP",
+      a11y1: "Conforme WCAG 2.1 niveau AAA",
+      a11y2: "Synthèse vocale 4 langues béninoises",
+      a11y3: "Mode Hors-Ligne (Offline-First)",
+      a11y4: "Conforme Code du Numérique (APDP)",
+      a11y5: "Secret Médical & Chiffrement AES-256",
+      copyright: "© 2026 Care.bj • Développé dans le cadre du Challenge e-Santé Bénin.",
+      passionBadge: "Fait avec passion pour le système de santé du Bénin"
     }
   },
 
   fon: {
     nav: {
-      services: "Azɔ̌ kpo Tɛn lɛ kpo",
-      inclusion: "Gbè kpo Alafia bǐ tɔn kpo",
-      pharmacies: "Amasinxwé zánjí tɔn",
-      specs: "Wema Azɔ̌ tɔn lɛ",
-      networkOnline: "Ɛntɛnɛti : Ɖò Azɔ̌jí",
-      networkOffline: "Ɛntɛnɛti : Gbɔn fífá (Xwégbe kɛɖɛ)",
-      voiceBtn: "Gbeɖiɖó d'alɔmɛ",
-      loginBtn: "Byɔ Wema Cè mɛ",
+      services: "Azɔ̌ lɛ",
+      inclusion: "Alafia Bǐ",
+      pharmacies: "Amasinxwé",
+      specs: "Wema lɛ",
+      networkOnline: "Ɛntɛnɛti ɖò jí",
+      networkOffline: "Fífá (Offline)",
+      networkTooltipOnline: "Ɛntɛnɛti ɖò azɔ̌jí • Wɛn lɛ ɖò kplékplé wɛ",
+      networkTooltipOffline: "Ɛntɛnɛti mɛvo • Wema towe lɛ ɖò mɔ̌to towe jí",
+      voiceBtn: "Gbeɖiɖó",
+      loginBtn: "Byɔ Mɛ",
       title: "Care.bj",
-      subtitle: "Alafia tò ɔ bǐ tɔn mɛ"
+      subtitle: "Alafia tò ɔ bǐ tɔn"
     },
     emergency: {
       label: "AZAN GBLÉGBÉ TƆN (URGENCE)",
@@ -248,7 +304,7 @@ export const translations: Record<SupportedLang, Translations> = {
       badge: "Azɔ̌wanú kpɔ́ tɔn",
       title: "Azɔ̌wanú e kplé dotoxwé, amasin kpo tòvi lɛ kpo bǐ",
       subtitle: "Kpɔ́n tɛn vovo e e bló nú azɔn-nɔ lɛ, doto zungbó mɛ tɔn lɛ, kpo amasin-satɔ́ lɛ kpo.",
-      tabDmp: "Wema & QR Code",
+      tabDmp: "Wema & QR",
       tabPharmacies: "Amasinxwé lɛ",
       tabTeleexpertise: "Doto zɔntɔ",
       tabEpidemies: "Gǎnhɔnyitɔ́ tɛn",
@@ -292,19 +348,46 @@ export const translations: Record<SupportedLang, Translations> = {
       p4Title: "Ɛntɛnɛti fífá (2G/3G)",
       p4Desc: "E nɔ w'azɔ̌ bǐ etlɛ nyí ɛntɛnɛti kpo wɛ ɔ, e na kplé wɛn lɛ bǐ hwenu e e lùn é.",
       p4Badge: "IndexedDB + Fífá"
+    },
+    footer: {
+      desc: "Azɔ̌wanú e kplé tò ɔ bǐ kpo alafia tòvi lɛ tɔn kpo ɖò Bénin.",
+      badgeSovereign: "Tò Bénin tɔn tɔn",
+      badgeLocalData: "Wɛn lɛ ɖò tò ɔ mɛ",
+      titleEmergency: "Afɔkú Bénin",
+      samu: "🚨 SAMU Tò tɔn : 112",
+      greenLine: "📞 Kán Fífá Alafia : 136",
+      firefighters: "🚒 Zǒcɔtɔ́ lɛ : 118",
+      police: "👮 Kpóntɔ́ lɛ : 117",
+      titleInstitutions: "Gǎnhɔnyitɔ́ tɛn lɛ",
+      inst1: "Ministère Alafia tɔn",
+      inst2: "ASIN (Ɛntɛnɛti gǎn)",
+      inst3: "ANSSP (Alafia bibi)",
+      inst4: "ANIP (NPI wema)",
+      inst5: "ARCH Alɔdó",
+      inst6: "ABMed (Amasin gǎn)",
+      titleA11y: "Mɛ bǐ tɔn & APDP",
+      a11y1: "WCAG 2.1 AAA nùbǐ",
+      a11y2: "Gbeɖiɖó gbè 4 mɛ",
+      a11y3: "Ɛntɛnɛti mɛvo (Offline)",
+      a11y4: "APDP Séwéma tɔn",
+      a11y5: "Cɔ́cɔ́ kpo AES-256 kpo",
+      copyright: "© 2026 Care.bj • Challenge e-Santé Bénin.",
+      passionBadge: "Bló kpo wanyiyi kpo nú Bénin"
     }
   },
 
   yoruba: {
     nav: {
-      services: "Àwọn Iṣẹ́ & Ojúṣe",
-      inclusion: "Àwọn Èdè & Àyè Gbogbo",
-      pharmacies: "Ilé Egbòogi Tó Wà",
-      specs: "Àwọn Ìwé Àkọsílẹ̀",
-      networkOnline: "Intanẹ́ẹ̀tì : Ń Ṣiṣẹ́",
-      networkOffline: "Intanẹ́ẹ̀tì : Láìsí Nẹ́tíwọ́ọ̀kì (Lórí Ẹ̀rọ)",
-      voiceBtn: "Olùrànlọ́wọ́ Ohùn",
-      loginBtn: "Wọlé sí Àkọsílẹ̀ Mi",
+      services: "Àwọn Iṣẹ́",
+      inclusion: "Ìrànlọ́wọ́",
+      pharmacies: "Egbòogi",
+      specs: "Àkọsílẹ̀",
+      networkOnline: "Nẹ́tíwọ́ọ̀kì wà",
+      networkOffline: "Láìsí Nẹ́tíwọ́ọ̀kì",
+      networkTooltipOnline: "Intanẹ́ẹ̀tì ń ṣiṣẹ́ • Àwọn iṣẹ́ wà lójúkannáà",
+      networkTooltipOffline: "Láìsí intanẹ́ẹ̀tì • Àwọn iṣẹ́ wà lórí ẹ̀rọ",
+      voiceBtn: "Ohùn",
+      loginBtn: "Wọlé",
       title: "Care.bj",
       subtitle: "Ìlera fún Gbogbo Wa"
     },
@@ -390,19 +473,46 @@ export const translations: Record<SupportedLang, Translations> = {
       p4Title: "Nẹ́tíwọ́ọ̀kì Kékeré (2G/3G)",
       p4Desc: "Ẹ̀rọ náà ń ṣiṣẹ́ bó tiẹ̀ jẹ́ pé kò sí intanẹ́ẹ̀tì, yóò sì gba iṣẹ́ pamọ́ sí orí ẹ̀rọ.",
       p4Badge: "IndexedDB + Offline"
+    },
+    footer: {
+      desc: "Ètò ìgbàlódé fún ìlera gbogbo àwọn ará Benin.",
+      badgeSovereign: "Ti Orílẹ̀-èdè Benin",
+      badgeLocalData: "Àwọn ìwífún wà nílé",
+      titleEmergency: "Pàjáwìrì Benin",
+      samu: "🚨 SAMU Orílẹ̀-èdè : 112",
+      greenLine: "📞 Ìlà Ìlera Ọ̀fẹ́ : 136",
+      firefighters: "🚒 Àwọn Olùpaná : 118",
+      police: "👮 Ọlọ́pàá : 117",
+      titleInstitutions: "Àwọn Ilé-iṣẹ́ Ìjọba",
+      inst1: "Ilé-iṣẹ́ Ìlera Benin",
+      inst2: "ASIN (Ẹ̀rọ Ayélujára)",
+      inst3: "ANSSP (Ìlera Àkọ́kọ́)",
+      inst4: "ANIP (NPI Ìdánimọ̀)",
+      inst5: "Ètò ARCH",
+      inst6: "ABMed (Egbòogi)",
+      titleA11y: "Àyè fún Gbogbo & APDP",
+      a11y1: "WCAG 2.1 AAA",
+      a11y2: "Ohùn ní èdè mẹ́rin",
+      a11y3: "Láìsí Intanẹ́ẹ̀tì",
+      a11y4: "Òfin APDP",
+      a11y5: "Ààbò AES-256",
+      copyright: "© 2026 Care.bj • Challenge e-Santé Bénin.",
+      passionBadge: "Pẹ̀lú ìfẹ́ fún Benin"
     }
   },
 
   bariba: {
     nav: {
-      services: "Kɔ̃ɔ̃ yeru & Gobi",
-      inclusion: "Teeru & Kɔ̃ɔ̃",
-      pharmacies: "Dɔkɔtɔ kɔmbusi",
-      specs: "Wema gberu",
-      networkOnline: "Intanɛti : Ya wãã",
-      networkOffline: "Intanɛti : Sɔɔ gobi (Tɛɛru)",
-      voiceBtn: "Gɔbisi teeru",
-      loginBtn: "Dùra nɛɛ wema sɔɔ",
+      services: "Kɔ̃ɔ̃ yeru",
+      inclusion: "Alafia",
+      pharmacies: "Dɔkɔtɔ",
+      specs: "Wema",
+      networkOnline: "Intanɛti wãã",
+      networkOffline: "Sɔɔ gobi",
+      networkTooltipOnline: "Intanɛti ya wãã",
+      networkTooltipOffline: "Intanɛti kuro sɔɔ",
+      voiceBtn: "Gɔbisi",
+      loginBtn: "Dùra",
       title: "Care.bj",
       subtitle: "Alafia bɛɛ kɔbɔ kuro"
     },
@@ -488,19 +598,46 @@ export const translations: Record<SupportedLang, Translations> = {
       p4Title: "2G/3G",
       p4Desc: "Offline-First.",
       p4Badge: "PWA"
+    },
+    footer: {
+      desc: "Alafia bɛɛ kɔbɔ kuro Bénin sɔɔ.",
+      badgeSovereign: "Bénin wura",
+      badgeLocalData: "Wema wãã",
+      titleEmergency: "Gobi Bénin",
+      samu: "🚨 SAMU : 112",
+      greenLine: "📞 Alafia : 136",
+      firefighters: "🚒 Sapeurs : 118",
+      police: "👮 Police : 117",
+      titleInstitutions: "Institutions",
+      inst1: "Ministère Alafia",
+      inst2: "ASIN",
+      inst3: "ANSSP",
+      inst4: "ANIP",
+      inst5: "ARCH",
+      inst6: "ABMed",
+      titleA11y: "Alafia & APDP",
+      a11y1: "WCAG 2.1 AAA",
+      a11y2: "Gɔbisi 4",
+      a11y3: "Offline",
+      a11y4: "APDP",
+      a11y5: "AES-256",
+      copyright: "© 2026 Care.bj • Challenge e-Santé Bénin.",
+      passionBadge: "Bénin wura"
     }
   },
 
   dendi: {
     nav: {
-      services: "Goyey nda Lokotoro",
-      inclusion: "Ciine nda Baani",
-      pharmacies: "Safaree Hugu",
-      specs: "Tira goy",
-      networkOnline: "Internet : A ga goy",
-      networkOffline: "Internet : Kani ra (A manti goy)",
-      voiceBtn: "Jinde gaa",
-      loginBtn: "Hundu ay baani ra",
+      services: "Goyey",
+      inclusion: "Baani",
+      pharmacies: "Safaree",
+      specs: "Tirey",
+      networkOnline: "Internet ga goy",
+      networkOffline: "Internet si",
+      networkTooltipOnline: "Internet a ga goy",
+      networkTooltipOffline: "Internet a si no",
+      voiceBtn: "Jinde",
+      loginBtn: "Hundu",
       title: "Care.bj",
       subtitle: "Baani borey kul se"
     },
@@ -586,6 +723,31 @@ export const translations: Record<SupportedLang, Translations> = {
       p4Title: "2G/3G",
       p4Desc: "Offline-First.",
       p4Badge: "PWA"
+    },
+    footer: {
+      desc: "Baani nda alafia platforme Benin ra.",
+      badgeSovereign: "Benin Laabo",
+      badgeLocalData: "Tirey wãã",
+      titleEmergency: "Cawari Benin",
+      samu: "🚨 SAMU : 112",
+      greenLine: "📞 Baani : 136",
+      firefighters: "🚒 Pompiers : 118",
+      police: "👮 Police : 117",
+      titleInstitutions: "Institutions",
+      inst1: "Ministère Baani",
+      inst2: "ASIN",
+      inst3: "ANSSP",
+      inst4: "ANIP",
+      inst5: "ARCH",
+      inst6: "ABMed",
+      titleA11y: "Baani & APDP",
+      a11y1: "WCAG 2.1 AAA",
+      a11y2: "Jinde ciiney",
+      a11y3: "Offline",
+      a11y4: "APDP",
+      a11y5: "AES-256",
+      copyright: "© 2026 Care.bj • Challenge e-Santé Bénin.",
+      passionBadge: "Benin Laabo"
     }
   }
 };
