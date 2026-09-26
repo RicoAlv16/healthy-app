@@ -62,7 +62,20 @@ export async function POST(request: NextRequest) {
       notes: parsed.data.notes,
     });
 
-    return NextResponse.json({ success: true, appointment: appt }, { status: 201 });
+    const apptDateStr = new Date(parsed.data.dateTime).toLocaleDateString("fr-BJ", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const smsAlert = {
+      sentTo: session.user.phone,
+      message: `CONFIRMATION CARE.BJ: Votre rendez-vous (${parsed.data.type === "teleconsultation" ? "Téléconsultation Vidéo Frugale" : "Présentiel"}) avec Dr. ${doctor.lastName} est confirmé pour le ${apptDateStr} à "${parsed.data.facility}". Rappel SMS prévu 24h avant.`,
+    };
+
+    return NextResponse.json({ success: true, appointment: appt, smsAlert }, { status: 201 });
   } catch (error) {
     console.error("Erreur POST appointments:", error);
     return NextResponse.json({ success: false, message: "Erreur serveur" }, { status: 500 });

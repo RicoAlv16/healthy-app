@@ -11,9 +11,11 @@ import {
   Trash2,
   ShieldAlert,
   Syringe,
-  Phone
+  Phone,
+  Video
 } from "lucide-react";
 import BreakGlassModal, { SmsAlertInfo } from "./BreakGlassModal";
+import TeleconsultationModal from "./TeleconsultationModal";
 
 interface DoctorDashboardProps {
   user: SafeUser;
@@ -60,6 +62,9 @@ export default function DoctorDashboard({
     log: EmergencyAccessLogRecord;
     smsAlert: SmsAlertInfo;
   } | null>(null);
+
+  // Téléconsultation active
+  const [activeTeleconsultation, setActiveTeleconsultation] = useState<AppointmentRecord | null>(null);
 
   // Formulaire nouvelle e-prescription
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
@@ -396,15 +401,32 @@ export default function DoctorDashboard({
             ) : (
               appointments.map((a) => (
                 <div key={a.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div>
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          a.type === "teleconsultation"
+                            ? "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300"
+                            : "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
+                        }`}>
+                          {a.type === "teleconsultation" ? "Téléconsultation Vidéo" : "Présentiel"}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                          a.status === "completed" ? "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300" :
+                          a.status === "cancelled" ? "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300" :
+                          "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                        }`}>
+                          {a.status === "completed" ? "Terminé" : a.status === "cancelled" ? "Annulé" : "Confirmé"}
+                        </span>
+                      </div>
+
                       <p className="text-sm font-black text-slate-900 dark:text-white">
                         {a.patient?.firstName} {a.patient?.lastName}
                       </p>
                       <p className="text-xs text-slate-500 font-mono">
                         NPI: {a.patient?.npi} • ARCH: {a.patient?.archNumber}
                       </p>
-                      <p className="text-xs text-teal-700 dark:text-teal-400 mt-1">
+                      <p className="text-xs text-teal-700 dark:text-teal-400">
                         {new Date(a.dateTime).toLocaleDateString("fr-BJ", {
                           weekday: "short",
                           day: "numeric",
@@ -415,15 +437,49 @@ export default function DoctorDashboard({
                       </p>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        setSearchQuery(a.patient?.npi || a.patient?.phone || "");
-                        handleSearchPatient();
-                      }}
-                      className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-teal-600 text-white text-xs font-bold transition-colors"
-                    >
-                      Dossier
-                    </button>
+                    <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                      {a.type === "teleconsultation" && a.status !== "cancelled" && (
+                        <button
+                          onClick={() => setActiveTeleconsultation(a)}
+                          className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-xs"
+                          title="Lancer la téléconsultation en direct"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          <span>Lancer Visio</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          setSearchQuery(a.patient?.npi || a.patient?.phone || "");
+                          handleSearchPatient();
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-teal-600 text-white text-xs font-bold transition-colors"
+                      >
+                        Dossier
+                      </button>
+
+                      {a.status !== "completed" && a.status !== "cancelled" && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              await fetch(`/api/appointments/${a.id}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ status: "completed" }),
+                              });
+                              onRefresh();
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-100 dark:bg-slate-700 dark:hover:bg-emerald-950 text-slate-700 dark:text-slate-300 hover:text-emerald-700 text-xs font-bold transition-colors"
+                          title="Marquer la consultation comme achevée"
+                        >
+                          Clôturer
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {a.notes && (
                     <p className="text-xs text-slate-600 dark:text-slate-400 italic">
@@ -619,6 +675,21 @@ export default function DoctorDashboard({
             setBreakGlassAlert({ log, smsAlert });
             setIsBreakGlassOpen(false);
             handleSearchPatient();
+          }}
+        />
+      )}
+
+      {/* Salle de Téléconsultation Praticien */}
+      {activeTeleconsultation && (
+        <TeleconsultationModal
+          isOpen={!!activeTeleconsultation}
+          onClose={() => setActiveTeleconsultation(null)}
+          appointment={activeTeleconsultation}
+          currentUser={user}
+          patientVitals={searchResult?.vitals || []}
+          onOpenPrescriptionModal={(patientId) => {
+            setPrescripPatientId(patientId);
+            setIsPrescriptionModalOpen(true);
           }}
         />
       )}

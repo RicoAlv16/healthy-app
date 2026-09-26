@@ -19,11 +19,14 @@ import {
   Video, 
   Phone,
   Syringe,
-  ShieldCheck
+  ShieldCheck,
+  X
 } from "lucide-react";
 import AddVitalSignModal from "./AddVitalSignModal";
 import DigitalHealthCardModal from "./DigitalHealthCardModal";
 import AddVaccineModal from "./AddVaccineModal";
+import BookAppointmentModal from "./BookAppointmentModal";
+import TeleconsultationModal from "./TeleconsultationModal";
 
 interface PatientDashboardProps {
   user: SafeUser;
@@ -45,6 +48,9 @@ export default function PatientDashboard({
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [isAddVitalOpen, setIsAddVitalOpen] = useState(false);
   const [isAddVaccineOpen, setIsAddVaccineOpen] = useState(false);
+  const [isBookAppointmentOpen, setIsBookAppointmentOpen] = useState(false);
+  const [activeTeleconsultation, setActiveTeleconsultation] = useState<AppointmentRecord | null>(null);
+  const [bookingAlert, setBookingAlert] = useState<{ appointment: AppointmentRecord; smsAlert: { sentTo: string; message: string } } | null>(null);
   const [selectedPrescription, setSelectedPrescription] = useState<PrescriptionRecord | null>(null);
   const [prescriptionQrUrl, setPrescriptionQrUrl] = useState<string>("");
 
@@ -326,7 +332,7 @@ export default function PatientDashboard({
         {/* Colonne Droite : Rendez-vous & Téléconsultations */}
         <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex flex-wrap items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-2">
               <div className="flex items-center gap-2">
                 <span className="p-2 rounded-xl bg-teal-500/10 text-teal-600">
                   <Calendar className="w-5 h-5" />
@@ -338,10 +344,38 @@ export default function PatientDashboard({
                   <p className="text-xs text-slate-500">Hôpitaux & Téléconsultation Care.bj</p>
                 </div>
               </div>
-              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
-                {appointments.length} prévu(s)
-              </span>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsBookAppointmentOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-xs transition-all active:scale-95"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Prendre RDV</span>
+                </button>
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                  {appointments.length} prévu(s)
+                </span>
+              </div>
             </div>
+
+            {/* Notification de Confirmation SMS */}
+            {bookingAlert && (
+              <div className="mt-3 p-3 rounded-2xl bg-teal-500/10 border border-teal-500/30 text-teal-950 dark:text-teal-200 text-xs flex items-center justify-between animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
+                  <span>
+                    Rendez-vous confirmé ! Alerte SMS transmise au <strong>{bookingAlert.smsAlert.sentTo}</strong>
+                  </span>
+                </div>
+                <button
+                  onClick={() => setBookingAlert(null)}
+                  className="text-teal-600 hover:text-teal-800 p-1"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
 
             <div className="mt-4 space-y-4">
               {appointments.length === 0 ? (
@@ -354,9 +388,9 @@ export default function PatientDashboard({
                     key={a.id}
                     className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-3"
                   >
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             a.type === "teleconsultation"
                               ? "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300"
@@ -366,12 +400,20 @@ export default function PatientDashboard({
                           </span>
                           <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                             {new Date(a.dateTime).toLocaleDateString("fr-BJ", {
-                              weekday: "long",
+                              weekday: "short",
                               day: "numeric",
-                              month: "long",
+                              month: "short",
                               hour: "2-digit",
                               minute: "2-digit",
                             })}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                            a.status === "confirmed" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300" :
+                            a.status === "completed" ? "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300" :
+                            a.status === "cancelled" ? "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300" :
+                            "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                          }`}>
+                            {a.status === "confirmed" ? "Confirmé" : a.status === "completed" ? "Terminé" : a.status === "cancelled" ? "Annulé" : "En attente"}
                           </span>
                         </div>
 
@@ -385,19 +427,35 @@ export default function PatientDashboard({
                         </p>
                       </div>
 
-                      {a.type === "teleconsultation" ? (
-                        <button
-                          onClick={() => alert("Connexion sécurisée à la salle de téléconsultation CNHU Care.bj en cours...")}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition-colors shrink-0"
-                        >
-                          <Video className="w-3.5 h-3.5" />
-                          <span>Rejoindre</span>
-                        </button>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-800">
-                          Confirmé
-                        </span>
-                      )}
+                      <div className="flex flex-col items-end gap-2">
+                        {a.type === "teleconsultation" && a.status !== "cancelled" ? (
+                          <button
+                            onClick={() => setActiveTeleconsultation(a)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition-colors shrink-0"
+                          >
+                            <Video className="w-3.5 h-3.5" />
+                            <span>Rejoindre</span>
+                          </button>
+                        ) : null}
+
+                        {a.status !== "cancelled" && a.status !== "completed" && (
+                          <button
+                            onClick={async () => {
+                              if (confirm("Voulez-vous vraiment annuler ce rendez-vous ?")) {
+                                try {
+                                  await fetch(`/api/appointments/${a.id}`, { method: "DELETE" });
+                                  onRefresh();
+                                } catch (err) {
+                                  console.error(err);
+                                }
+                              }
+                            }}
+                            className="text-[10px] text-slate-400 hover:text-rose-600 transition-colors"
+                          >
+                            Annuler
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {a.notes && (
@@ -608,6 +666,28 @@ export default function PatientDashboard({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Modale de Réservation de Rendez-vous */}
+      <BookAppointmentModal
+        isOpen={isBookAppointmentOpen}
+        onClose={() => setIsBookAppointmentOpen(false)}
+        userPhone={user.phone}
+        onSuccess={(appointment, smsAlert) => {
+          setBookingAlert({ appointment, smsAlert });
+          onRefresh();
+        }}
+      />
+
+      {/* Salle de Téléconsultation Frugale */}
+      {activeTeleconsultation && (
+        <TeleconsultationModal
+          isOpen={!!activeTeleconsultation}
+          onClose={() => setActiveTeleconsultation(null)}
+          appointment={activeTeleconsultation}
+          currentUser={user}
+          patientVitals={vitals}
+        />
       )}
 
     </div>

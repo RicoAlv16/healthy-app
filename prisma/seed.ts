@@ -47,6 +47,44 @@ async function main() {
   });
   console.log(`✅ Médecin créé : Dr. ${doctor.firstName} ${doctor.lastName} (Ordre: ${doctor.professionalId})`);
 
+  // 2b. Pédiatre CHUMEL Cotonou
+  const doctor2 = await prisma.user.upsert({
+    where: { email: "dr.dossou@chumel.bj" },
+    update: {},
+    create: {
+      id: "usr_doctor_002",
+      role: Role.DOCTOR,
+      firstName: "Chantal",
+      lastName: "DOSSOU",
+      email: "dr.dossou@chumel.bj",
+      phone: "+229 97 55 66 77",
+      passwordHash: "$2b$10$ybrOgnLuz0Fh0BLsXig.WOy9US7nX6WbTJPuGlMa1WWDXaZj0Nyty", // DoctorPass@2026
+      npi: "8765-4321-2109",
+      professionalId: "ONMB-5120",
+      isVerified: true,
+    },
+  });
+  console.log(`✅ Médecin créé : Dr. ${doctor2.firstName} ${doctor2.lastName} (Ordre: ${doctor2.professionalId})`);
+
+  // 2c. Cardiologue CHUD Ouémé-Plateau
+  const doctor3 = await prisma.user.upsert({
+    where: { email: "dr.tossou@chud.bj" },
+    update: {},
+    create: {
+      id: "usr_doctor_003",
+      role: Role.DOCTOR,
+      firstName: "Koffi",
+      lastName: "TOSSOU",
+      email: "dr.tossou@chud.bj",
+      phone: "+229 96 11 22 33",
+      passwordHash: "$2b$10$ybrOgnLuz0Fh0BLsXig.WOy9US7nX6WbTJPuGlMa1WWDXaZj0Nyty", // DoctorPass@2026
+      npi: "7654-3210-3210",
+      professionalId: "ONMB-3904",
+      isVerified: true,
+    },
+  });
+  console.log(`✅ Médecin créé : Dr. ${doctor3.firstName} ${doctor3.lastName} (Ordre: ${doctor3.professionalId})`);
+
   // 3. Pharmacie Camp Guézo test
   const pharmacy = await prisma.user.upsert({
     where: { email: "contact@pharmacie-guezo.bj" },

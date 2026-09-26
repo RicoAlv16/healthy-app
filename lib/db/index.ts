@@ -342,6 +342,15 @@ export const userRepository = {
 
     return mapPrismaUser(updated);
   },
+
+  async findByRole(role: UserRole): Promise<SafeUser[]> {
+    const prismaRole = toPrismaRole(role);
+    const users = await prisma.user.findMany({
+      where: { role: prismaRole },
+      orderBy: { lastName: "asc" },
+    });
+    return users.map((u) => sanitizeUser(mapPrismaUser(u)));
+  },
 };
 
 // Repository OTP connecté à PostgreSQL via Prisma
@@ -601,6 +610,12 @@ export const appointmentRepository = {
     await prisma.appointment.update({
       where: { id },
       data: { status },
+    });
+  },
+
+  async delete(id: string): Promise<void> {
+    await prisma.appointment.delete({
+      where: { id },
     });
   },
 };
