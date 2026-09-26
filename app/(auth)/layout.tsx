@@ -19,8 +19,8 @@ export default function AuthLayout({
             className="flex items-center gap-2.5 group"
             title="Retour à l'accueil Care.bj"
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-700 via-teal-600 to-emerald-500 text-white flex items-center justify-center font-black text-lg shadow-md shadow-teal-700/20 group-hover:scale-105 transition-transform">
-              ✚
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-700 via-teal-600 to-emerald-500 text-white flex items-center justify-center font-black text-base shadow-md shadow-teal-700/20 group-hover:scale-105 transition-transform">
+              <span className="font-black text-base tracking-tight">C+</span>
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">

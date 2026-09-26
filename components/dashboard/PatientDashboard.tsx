@@ -671,6 +671,7 @@ export default function PatientDashboard({
 
             <div className="p-3 bg-white rounded-2xl shadow-inner border border-slate-200 inline-block mb-4">
               {prescriptionQrUrl && (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={prescriptionQrUrl}
                   alt="QR Prescription"

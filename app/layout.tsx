@@ -18,6 +18,10 @@ export const metadata: Metadata = {
   description: "Plateforme numérique collaborative, souveraine et inclusive de suivi des soins au Bénin. Conçue pour tous les citoyens : assistance vocale en langues nationales, mode hors-ligne et accessibilité WCAG AAA.",
   keywords: ["e-santé", "Bénin", "santé numérique", "DMP", "télémédecine", "pharmacie de garde", "SAMU 112", "Care.bj", "ANIP", "AMU"],
   authors: [{ name: "Équipe e-Santé Bénin" }],
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

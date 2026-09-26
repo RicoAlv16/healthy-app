@@ -156,6 +156,7 @@ export default function DigitalHealthCardModal({
             <div className="col-span-2 flex flex-col items-center justify-center">
               <div className="p-1.5 bg-white rounded-xl shadow-lg border border-teal-500/40">
                 {qrDataUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={qrDataUrl}
                     alt="QR Code Carte Sanitaire Souveraine"

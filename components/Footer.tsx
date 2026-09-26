@@ -25,8 +25,8 @@ export default function Footer({ currentLang }: FooterProps) {
           {/* Identité Institutionnelle */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center font-black text-xl text-white">
-                C
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-700 via-teal-600 to-emerald-500 flex items-center justify-center font-black text-xl text-white shadow-md shadow-teal-700/20">
+                <span className="font-black text-xl tracking-tight">C+</span>
               </div>
               <span className="text-2xl font-black tracking-tight text-white">
                 Care<span className="text-teal-400">.bj</span>
