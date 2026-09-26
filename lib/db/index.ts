@@ -115,6 +115,37 @@ export interface PrescriptionRecord {
   } | null;
 }
 
+export interface VaccinationRecord {
+  id: string;
+  userId: string;
+  vaccineName: string;
+  diseaseTarget: string;
+  dose: string;
+  status: string; // 'administered', 'scheduled', 'overdue'
+  administeredAt?: string | null;
+  batchNumber?: string | null;
+  facility?: string | null;
+  administeredBy?: string | null;
+  nextDueDate?: string | null;
+  createdAt: string;
+}
+
+export interface EmergencyAccessLogRecord {
+  id: string;
+  patientId: string;
+  doctorId: string;
+  facility: string;
+  reason: string;
+  smsNotified: boolean;
+  accessedAt: string;
+  doctor?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    professionalId?: string | null;
+  };
+}
+
 // Convertisseur Rôle Prisma (Enum MAJUSCULE) <-> Rôle Métier (minuscule)
 function toPrismaRole(role: UserRole): Role {
   switch (role) {
@@ -798,4 +829,142 @@ export const prescriptionRepository = {
     };
   },
 };
+
+// Repository Carnet Vaccinal (PEV Bénin) connecté à PostgreSQL via Prisma
+export const vaccinationRepository = {
+  async getByUserId(userId: string): Promise<VaccinationRecord[]> {
+    const items = await prisma.vaccination.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return items.map((v) => ({
+      id: v.id,
+      userId: v.userId,
+      vaccineName: v.vaccineName,
+      diseaseTarget: v.diseaseTarget,
+      dose: v.dose,
+      status: v.status,
+      administeredAt: v.administeredAt?.toISOString() || null,
+      batchNumber: v.batchNumber,
+      facility: v.facility,
+      administeredBy: v.administeredBy,
+      nextDueDate: v.nextDueDate?.toISOString() || null,
+      createdAt: v.createdAt.toISOString(),
+    }));
+  },
+
+  async add(data: {
+    userId: string;
+    vaccineName: string;
+    diseaseTarget: string;
+    dose: string;
+    status?: string;
+    administeredAt?: Date;
+    batchNumber?: string;
+    facility?: string;
+    administeredBy?: string;
+    nextDueDate?: Date;
+  }): Promise<VaccinationRecord> {
+    const created = await prisma.vaccination.create({
+      data: {
+        userId: data.userId,
+        vaccineName: data.vaccineName,
+        diseaseTarget: data.diseaseTarget,
+        dose: data.dose,
+        status: data.status || "administered",
+        administeredAt: data.administeredAt || new Date(),
+        batchNumber: data.batchNumber || null,
+        facility: data.facility || null,
+        administeredBy: data.administeredBy || null,
+        nextDueDate: data.nextDueDate || null,
+      },
+    });
+
+    return {
+      id: created.id,
+      userId: created.userId,
+      vaccineName: created.vaccineName,
+      diseaseTarget: created.diseaseTarget,
+      dose: created.dose,
+      status: created.status,
+      administeredAt: created.administeredAt?.toISOString() || null,
+      batchNumber: created.batchNumber,
+      facility: created.facility,
+      administeredBy: created.administeredBy,
+      nextDueDate: created.nextDueDate?.toISOString() || null,
+      createdAt: created.createdAt.toISOString(),
+    };
+  },
+};
+
+// Repository Bris de Glace / Accès d'Urgence connecté à PostgreSQL via Prisma
+export const emergencyAccessRepository = {
+  async getByPatientId(patientId: string): Promise<EmergencyAccessLogRecord[]> {
+    const items = await prisma.emergencyAccessLog.findMany({
+      where: { patientId },
+      include: {
+        doctor: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            professionalId: true,
+          },
+        },
+      },
+      orderBy: { accessedAt: "desc" },
+    });
+
+    return items.map((l) => ({
+      id: l.id,
+      patientId: l.patientId,
+      doctorId: l.doctorId,
+      facility: l.facility,
+      reason: l.reason,
+      smsNotified: l.smsNotified,
+      accessedAt: l.accessedAt.toISOString(),
+      doctor: l.doctor,
+    }));
+  },
+
+  async create(data: {
+    patientId: string;
+    doctorId: string;
+    facility: string;
+    reason: string;
+  }): Promise<EmergencyAccessLogRecord> {
+    const created = await prisma.emergencyAccessLog.create({
+      data: {
+        patientId: data.patientId,
+        doctorId: data.doctorId,
+        facility: data.facility,
+        reason: data.reason,
+        smsNotified: true,
+      },
+      include: {
+        doctor: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            professionalId: true,
+          },
+        },
+      },
+    });
+
+    return {
+      id: created.id,
+      patientId: created.patientId,
+      doctorId: created.doctorId,
+      facility: created.facility,
+      reason: created.reason,
+      smsNotified: created.smsNotified,
+      accessedAt: created.accessedAt.toISOString(),
+      doctor: created.doctor,
+    };
+  },
+};
+
 

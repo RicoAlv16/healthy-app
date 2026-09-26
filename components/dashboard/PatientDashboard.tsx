@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import QRCode from "qrcode";
-import { SafeUser, VitalSignRecord, AppointmentRecord, PrescriptionRecord } from "@/lib/db";
+import { SafeUser, VitalSignRecord, AppointmentRecord, PrescriptionRecord, VaccinationRecord } from "@/lib/db";
 import { 
   Heart, 
   Activity, 
@@ -17,16 +17,20 @@ import {
   CheckCircle2, 
   QrCode, 
   Video, 
-  Phone 
+  Phone,
+  Syringe,
+  ShieldCheck
 } from "lucide-react";
 import AddVitalSignModal from "./AddVitalSignModal";
 import DigitalHealthCardModal from "./DigitalHealthCardModal";
+import AddVaccineModal from "./AddVaccineModal";
 
 interface PatientDashboardProps {
   user: SafeUser;
   vitals: VitalSignRecord[];
   appointments: AppointmentRecord[];
   prescriptions: PrescriptionRecord[];
+  vaccinations?: VaccinationRecord[];
   onRefresh: () => void;
 }
 
@@ -35,10 +39,12 @@ export default function PatientDashboard({
   vitals,
   appointments,
   prescriptions,
+  vaccinations = [],
   onRefresh,
 }: PatientDashboardProps) {
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [isAddVitalOpen, setIsAddVitalOpen] = useState(false);
+  const [isAddVaccineOpen, setIsAddVaccineOpen] = useState(false);
   const [selectedPrescription, setSelectedPrescription] = useState<PrescriptionRecord | null>(null);
   const [prescriptionQrUrl, setPrescriptionQrUrl] = useState<string>("");
 
@@ -413,7 +419,116 @@ export default function PatientDashboard({
 
       </div>
 
-      {/* 4. Section Contacts d'Urgence et Données Médicales de Secours */}
+      {/* 4. Carnet Vaccinal Électronique (Programme Élargi de Vaccination - PEV Bénin) */}
+      <div id="vaccines" className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-3">
+          <div className="flex items-center gap-2">
+            <span className="p-2 rounded-xl bg-teal-500/10 text-teal-600">
+              <Syringe className="w-5 h-5" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Carnet Vaccinal Électronique (PEV Bénin)
+                </h3>
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                  <ShieldCheck className="w-3 h-3 text-teal-600" />
+                  Homologué Ministère de la Santé
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Suivi national des vaccinations obligatoires et rappels décennaux
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsAddVaccineOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-colors shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Enregistrer un vaccin</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {vaccinations.length === 0 ? (
+            <div className="col-span-full py-8 text-center text-slate-400 text-xs">
+              Aucun vaccin enregistré dans votre dossier.
+            </div>
+          ) : (
+            vaccinations.map((vac) => (
+              <div
+                key={vac.id}
+                className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex flex-col justify-between space-y-3"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-bold text-sm text-slate-900 dark:text-white leading-tight">
+                      {vac.vaccineName}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                        vac.status === "administered"
+                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                          : vac.status === "scheduled"
+                          ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                          : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+                      }`}
+                    >
+                      {vac.status === "administered"
+                        ? "Administré"
+                        : vac.status === "scheduled"
+                        ? "Rappel prévu"
+                        : "En retard"}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                    Cible : {vac.diseaseTarget}
+                  </p>
+
+                  <p className="text-xs font-semibold text-teal-700 dark:text-teal-400 mt-2">
+                    {vac.dose}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700/80 text-[11px] text-slate-500 space-y-1">
+                  {vac.administeredAt && (
+                    <p className="flex items-center justify-between">
+                      <span>Date injection :</span>
+                      <strong className="text-slate-700 dark:text-slate-300">
+                        {new Date(vac.administeredAt).toLocaleDateString("fr-BJ")}
+                      </strong>
+                    </p>
+                  )}
+                  {vac.nextDueDate && (
+                    <p className="flex items-center justify-between text-amber-700 dark:text-amber-400 font-semibold">
+                      <span>Échéance rappel :</span>
+                      <span>{new Date(vac.nextDueDate).toLocaleDateString("fr-BJ")}</span>
+                    </p>
+                  )}
+                  {vac.batchNumber && (
+                    <p className="flex items-center justify-between font-mono text-[10px]">
+                      <span>Lot :</span>
+                      <span className="text-slate-600 dark:text-slate-400">{vac.batchNumber}</span>
+                    </p>
+                  )}
+                  {vac.facility && (
+                    <p className="text-[10px] text-slate-400 truncate" title={vac.facility}>
+                      📍 {vac.facility}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* 5. Section Contacts d'Urgence et Données Médicales de Secours */}
       <div className="p-6 rounded-3xl bg-slate-900 text-white border border-slate-800 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-xl shrink-0">
@@ -447,6 +562,13 @@ export default function PatientDashboard({
       <AddVitalSignModal
         isOpen={isAddVitalOpen}
         onClose={() => setIsAddVitalOpen(false)}
+        onSuccess={onRefresh}
+      />
+
+      {/* Modale Enregistrement Vaccin */}
+      <AddVaccineModal
+        isOpen={isAddVaccineOpen}
+        onClose={() => setIsAddVaccineOpen(false)}
         onSuccess={onRefresh}
       />
 

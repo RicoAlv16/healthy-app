@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
-import { userRepository, vitalSignRepository, prescriptionRepository, appointmentRepository } from "@/lib/db";
+import { 
+  userRepository, 
+  vitalSignRepository, 
+  prescriptionRepository, 
+  appointmentRepository,
+  vaccinationRepository,
+  emergencyAccessRepository 
+} from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,10 +37,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const [vitals, prescriptions, appointments] = await Promise.all([
+    const [vitals, prescriptions, appointments, vaccinations, emergencyAccessLogs] = await Promise.all([
       vitalSignRepository.getByUserId(patient.id),
       prescriptionRepository.getByPatientId(patient.id),
       appointmentRepository.getByPatientId(patient.id),
+      vaccinationRepository.getByUserId(patient.id),
+      emergencyAccessRepository.getByPatientId(patient.id),
     ]);
 
     return NextResponse.json({
@@ -53,6 +62,8 @@ export async function GET(request: NextRequest) {
       vitals,
       prescriptions,
       appointments,
+      vaccinations,
+      emergencyAccessLogs,
     });
   } catch (error) {
     console.error("Erreur recherche patient:", error);

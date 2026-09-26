@@ -5,9 +5,11 @@ import {
   vitalSignRepository, 
   appointmentRepository, 
   prescriptionRepository,
+  vaccinationRepository,
   VitalSignRecord,
   AppointmentRecord,
-  PrescriptionRecord
+  PrescriptionRecord,
+  VaccinationRecord
 } from "@/lib/db";
 import DashboardClientShell from "@/components/dashboard/DashboardClientShell";
 
@@ -25,13 +27,15 @@ export default async function DashboardPage() {
   let initialVitals: VitalSignRecord[] = [];
   let initialAppointments: AppointmentRecord[] = [];
   let initialPrescriptions: PrescriptionRecord[] = [];
+  let initialVaccinations: VaccinationRecord[] = [];
 
   try {
     if (user.role === "patient") {
-      [initialVitals, initialAppointments, initialPrescriptions] = await Promise.all([
+      [initialVitals, initialAppointments, initialPrescriptions, initialVaccinations] = await Promise.all([
         vitalSignRepository.getByUserId(user.id),
         appointmentRepository.getByPatientId(user.id),
         prescriptionRepository.getByPatientId(user.id),
+        vaccinationRepository.getByUserId(user.id),
       ]);
     } else if (user.role === "doctor") {
       [initialAppointments, initialPrescriptions] = await Promise.all([
@@ -51,6 +55,7 @@ export default async function DashboardPage() {
       initialVitals={initialVitals}
       initialAppointments={initialAppointments}
       initialPrescriptions={initialPrescriptions}
+      initialVaccinations={initialVaccinations}
     />
   );
 }

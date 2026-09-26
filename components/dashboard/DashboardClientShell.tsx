@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { SafeUser, VitalSignRecord, AppointmentRecord, PrescriptionRecord } from "@/lib/db";
+import { SafeUser, VitalSignRecord, AppointmentRecord, PrescriptionRecord, VaccinationRecord } from "@/lib/db";
 import DashboardSidebar from "./DashboardSidebar";
 import PatientDashboard from "./PatientDashboard";
 import DoctorDashboard from "./DoctorDashboard";
@@ -13,6 +13,7 @@ interface DashboardClientShellProps {
   initialVitals: VitalSignRecord[];
   initialAppointments: AppointmentRecord[];
   initialPrescriptions: PrescriptionRecord[];
+  initialVaccinations?: VaccinationRecord[];
 }
 
 export default function DashboardClientShell({
@@ -20,19 +21,22 @@ export default function DashboardClientShell({
   initialVitals,
   initialAppointments,
   initialPrescriptions,
+  initialVaccinations = [],
 }: DashboardClientShellProps) {
   const [vitals, setVitals] = useState<VitalSignRecord[]>(initialVitals);
   const [appointments, setAppointments] = useState<AppointmentRecord[]>(initialAppointments);
   const [prescriptions, setPrescriptions] = useState<PrescriptionRecord[]>(initialPrescriptions);
+  const [vaccinations, setVaccinations] = useState<VaccinationRecord[]>(initialVaccinations);
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
 
   const handleRefresh = async () => {
     try {
       if (user.role === "patient") {
-        const [vRes, aRes, pRes] = await Promise.all([
+        const [vRes, aRes, pRes, vacRes] = await Promise.all([
           fetch("/api/vitals"),
           fetch("/api/appointments"),
           fetch("/api/prescriptions"),
+          fetch("/api/vaccinations"),
         ]);
         if (vRes.ok) {
           const vData = await vRes.json();
@@ -45,6 +49,10 @@ export default function DashboardClientShell({
         if (pRes.ok) {
           const pData = await pRes.json();
           if (pData.prescriptions) setPrescriptions(pData.prescriptions);
+        }
+        if (vacRes.ok) {
+          const vacData = await vacRes.json();
+          if (vacData.vaccinations) setVaccinations(vacData.vaccinations);
         }
       } else if (user.role === "doctor") {
         const [aRes, pRes] = await Promise.all([
@@ -100,6 +108,7 @@ export default function DashboardClientShell({
             vitals={vitals}
             appointments={appointments}
             prescriptions={prescriptions}
+            vaccinations={vaccinations}
             onRefresh={handleRefresh}
           />
         )}

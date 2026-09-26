@@ -35,11 +35,14 @@ model User {
   updatedAt      DateTime  @updatedAt
 
   vitalSigns              VitalSign[]
-  patientAppointments     Appointment[]    @relation("PatientAppointments")
-  doctorAppointments      Appointment[]    @relation("DoctorAppointments")
-  patientPrescriptions    Prescription[]   @relation("PatientPrescriptions")
-  doctorPrescriptions     Prescription[]   @relation("DoctorPrescriptions")
-  pharmacyPrescriptions   Prescription[]   @relation("PharmacyPrescriptions")
+  patientAppointments     Appointment[]         @relation("PatientAppointments")
+  doctorAppointments      Appointment[]         @relation("DoctorAppointments")
+  patientPrescriptions    Prescription[]        @relation("PatientPrescriptions")
+  doctorPrescriptions     Prescription[]        @relation("DoctorPrescriptions")
+  pharmacyPrescriptions   Prescription[]        @relation("PharmacyPrescriptions")
+  vaccinations            Vaccination[]
+  patientEmergencyAccess  EmergencyAccessLog[]  @relation("PatientEmergencyAccess")
+  doctorEmergencyAccess   EmergencyAccessLog[]  @relation("DoctorEmergencyAccess")
 
   @@index([email])
   @@index([phone])
@@ -111,4 +114,39 @@ model Prescription {
   @@index([patientId])
   @@index([doctorId])
   @@map("prescriptions")
+}
+
+model Vaccination {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vaccineName    String    // e.g. "BCG", "Pentavalent 1", "Fièvre Jaune (VAA)", "Rougeole-Rubéole (RR1)"
+  diseaseTarget  String    // e.g. "Tuberculose", "Diphtérie, Tétanos, Coqueluche, Hépatite B, Hib", "Fièvre Jaune"
+  dose           String    // e.g. "Dose unique", "Dose 1/3", "Rappel 10 ans"
+  status         String    @default("scheduled") // 'administered', 'scheduled', 'overdue'
+  administeredAt DateTime?
+  batchNumber    String?   // N° de lot (ex: LOT-PEV-2024-884)
+  facility       String?   // Centre de santé (ex: "Centre de Santé d'Arrondissement de Godomey")
+  administeredBy String?   // Nom du soignant ou médecin
+  nextDueDate    DateTime? // Date du prochain rappel
+  createdAt      DateTime  @default(now())
+
+  @@index([userId, status])
+  @@map("vaccinations")
+}
+
+model EmergencyAccessLog {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     User     @relation("PatientEmergencyAccess", fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId    String
+  doctor      User     @relation("DoctorEmergencyAccess", fields: [doctorId], references: [id], onDelete: Cascade)
+  facility    String   // Hôpital / Service d'urgence (ex: "Urgences CNHU-HKM Cotonou")
+  reason      String   // Justification clinique obligatoire (min 30 car.)
+  smsNotified Boolean  @default(true) // Notification SMS envoyée au patient / tuteur
+  accessedAt  DateTime @default(now())
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@map("emergency_access_logs")
 }

@@ -155,6 +155,77 @@ async function main() {
   });
   console.log(`✅ Ordonnance électronique active créée : ${prescription.code}`);
 
+  // 7. Carnet Vaccinal Électronique (Programme Élargi de Vaccination - PEV Bénin)
+  await prisma.vaccination.deleteMany({ where: { userId: patient.id } });
+  const vaccines = [
+    {
+      vaccineName: "BCG (Bacille de Calmette et Guérin)",
+      diseaseTarget: "Tuberculose pulmonaire et méningée",
+      dose: "Dose unique (Naissance)",
+      status: "administered",
+      administeredAt: new Date("1996-03-15"),
+      batchNumber: "LOT-BCG-BJ-089",
+      facility: "Maternité Lagune de Cotonou",
+      administeredBy: "Sage-Femme Major",
+    },
+    {
+      vaccineName: "Pentavalent (DTC-HepB-Hib)",
+      diseaseTarget: "Diphtérie, Tétanos, Coqueluche, Hépatite B, Infections à Haemophilus influenzae b",
+      dose: "3 doses complètes",
+      status: "administered",
+      administeredAt: new Date("1996-06-20"),
+      batchNumber: "LOT-PENTA-BJ-442",
+      facility: "Centre de Santé d'Arrondissement de Godomey",
+      administeredBy: "Agent de Santé Communautaire",
+    },
+    {
+      vaccineName: "Fièvre Jaune (VAA)",
+      diseaseTarget: "Fièvre Jaune / Arbovirose",
+      dose: "Dose unique (Immunité à vie)",
+      status: "administered",
+      administeredAt: new Date("2018-11-10"),
+      batchNumber: "LOT-VAA-BJ-2018",
+      facility: "CNHU-HKM Cotonou - Centre de Vaccination Internationale",
+      administeredBy: "Dr. Florent AGBO",
+    },
+    {
+      vaccineName: "Rougeole-Rubéole (RR)",
+      diseaseTarget: "Rougeole et Rubéole congénitale",
+      dose: "Dose de rappel",
+      status: "administered",
+      administeredAt: new Date("1997-01-12"),
+      batchNumber: "LOT-RR-BJ-105",
+      facility: "Dispensaire Saint-Michel de Cotonou",
+      administeredBy: "Infirmière DE",
+    },
+    {
+      vaccineName: "VAT (Vaccin Antitétanique Adulte)",
+      diseaseTarget: "Tétanos néonatal et adulte",
+      dose: "Rappel décennal (10 ans)",
+      status: "scheduled",
+      nextDueDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // Dans 60 jours
+      facility: "Centre de Santé d'Arrondissement de référence",
+    },
+  ];
+
+  for (const v of vaccines) {
+    await prisma.vaccination.create({
+      data: {
+        userId: patient.id,
+        vaccineName: v.vaccineName,
+        diseaseTarget: v.diseaseTarget,
+        dose: v.dose,
+        status: v.status,
+        administeredAt: v.administeredAt || null,
+        batchNumber: v.batchNumber || null,
+        facility: v.facility || null,
+        administeredBy: v.administeredBy || null,
+        nextDueDate: v.nextDueDate || null,
+      },
+    });
+  }
+  console.log(`✅ ${vaccines.length} vaccins du calendrier PEV Bénin enregistrés pour ${patient.firstName}`);
+
   console.log("🚀 Base de données PostgreSQL Care.bj initialisée avec succès !");
 }
 

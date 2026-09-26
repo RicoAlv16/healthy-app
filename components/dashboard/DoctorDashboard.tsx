@@ -1,15 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
-import { SafeUser, AppointmentRecord, PrescriptionRecord, VitalSignRecord } from "@/lib/db";
+import { SafeUser, AppointmentRecord, PrescriptionRecord, VitalSignRecord, VaccinationRecord, EmergencyAccessLogRecord } from "@/lib/db";
 import { 
   Stethoscope, 
   Search, 
   FilePlus, 
   Calendar, 
   Plus, 
-  Trash2
+  Trash2,
+  ShieldAlert,
+  Syringe,
+  Phone
 } from "lucide-react";
+import BreakGlassModal, { SmsAlertInfo } from "./BreakGlassModal";
 
 interface DoctorDashboardProps {
   user: SafeUser;
@@ -45,8 +49,17 @@ export default function DoctorDashboard({
     vitals: VitalSignRecord[];
     prescriptions: PrescriptionRecord[];
     appointments: AppointmentRecord[];
+    vaccinations?: VaccinationRecord[];
+    emergencyAccessLogs?: EmergencyAccessLogRecord[];
   } | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  // Bris de glace (Urgence)
+  const [isBreakGlassOpen, setIsBreakGlassOpen] = useState(false);
+  const [breakGlassAlert, setBreakGlassAlert] = useState<{
+    log: EmergencyAccessLogRecord;
+    smsAlert: SmsAlertInfo;
+  } | null>(null);
 
   // Formulaire nouvelle e-prescription
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
@@ -241,10 +254,18 @@ export default function DoctorDashboard({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                   Groupe : {searchResult.patient.bloodGroup || "O+"}
                 </span>
+                <button
+                  onClick={() => setIsBreakGlassOpen(true)}
+                  className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-colors"
+                  title="Accès d'urgence dérogatoire conforme APDP"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>🚨 Bris de Glace</span>
+                </button>
                 <button
                   onClick={() => {
                     setPrescripPatientId(searchResult.patient.id);
@@ -256,6 +277,37 @@ export default function DoctorDashboard({
                 </button>
               </div>
             </div>
+
+            {/* Bannière d'accès d'urgence APDP si bris de glace actif */}
+            {(breakGlassAlert || (searchResult.emergencyAccessLogs && searchResult.emergencyAccessLogs.length > 0)) && (
+              <div className="p-4 rounded-2xl bg-rose-500/10 border-2 border-rose-500/30 text-rose-950 dark:text-rose-200 space-y-2 animate-fade-in">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0" />
+                    <span className="font-black text-xs uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                      Accès d&apos;Urgence « Bris de Glace » Actif & Notifié APDP
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-rose-600 text-white font-bold">
+                    Conforme Loi n° 2017-20 (Code du Numérique Bénin)
+                  </span>
+                </div>
+                {breakGlassAlert ? (
+                  <div className="text-xs space-y-1.5">
+                    <p><strong>Motif clinique déclaré :</strong> {breakGlassAlert.log.reason}</p>
+                    <p className="flex items-center gap-1.5 text-[11px] text-rose-700 dark:text-rose-300 font-medium">
+                      <Phone className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Alerte SMS transmise au patient ({breakGlassAlert.smsAlert?.to}) : <em>« {breakGlassAlert.smsAlert?.message} »</em></span>
+                    </p>
+                  </div>
+                ) : searchResult.emergencyAccessLogs && searchResult.emergencyAccessLogs[0] ? (
+                  <div className="text-xs space-y-1">
+                    <p><strong>Dernier accès d&apos;urgence consigné :</strong> {new Date(searchResult.emergencyAccessLogs[0].accessedAt).toLocaleDateString("fr-BJ")} par {searchResult.emergencyAccessLogs[0].doctor?.firstName ? `Dr. ${searchResult.emergencyAccessLogs[0].doctor.firstName} ${searchResult.emergencyAccessLogs[0].doctor.lastName}` : "Praticien urgentiste"} ({searchResult.emergencyAccessLogs[0].facility})</p>
+                    <p><strong>Motif clinique :</strong> {searchResult.emergencyAccessLogs[0].reason}</p>
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             {/* Constantes vitales du patient */}
             <div>
@@ -277,8 +329,45 @@ export default function DoctorDashboard({
               </div>
             </div>
 
+            {/* Carnet Vaccinal Électronique (PEV Bénin) */}
+            <div className="pt-2 border-t border-teal-200/50 dark:border-teal-800/40">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase flex items-center gap-1.5">
+                  <Syringe className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Carnet Vaccinal Électronique (PEV Bénin)</span>
+                </p>
+                <span className="text-[11px] text-teal-700 dark:text-teal-400 font-bold">
+                  {searchResult.vaccinations?.length || 0} vaccin(s) enregistré(s)
+                </span>
+              </div>
+              {searchResult.vaccinations && searchResult.vaccinations.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {searchResult.vaccinations.map((vac) => (
+                    <div key={vac.id} className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 dark:text-white truncate">{vac.vaccineName}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                          vac.status === "administered" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" :
+                          vac.status === "scheduled" ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" :
+                          "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                        }`}>
+                          {vac.status === "administered" ? "Administré" : vac.status === "scheduled" ? "Prévu" : "En retard"}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 font-mono">Dose: {vac.dose} • Lot: {vac.batchNumber || "Non spécifié"}</p>
+                      <p className="text-[10px] text-slate-400">
+                        {vac.administeredAt ? `Fait le ${new Date(vac.administeredAt).toLocaleDateString("fr-BJ")}` : vac.nextDueDate ? `Prévu le ${new Date(vac.nextDueDate).toLocaleDateString("fr-BJ")}` : "Date indéterminée"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic">Aucun vaccin PEV consigné à ce jour.</p>
+              )}
+            </div>
+
             {/* Allergies et contact d'urgence */}
-            <div className="text-xs text-slate-700 dark:text-slate-300 flex flex-wrap gap-4">
+            <div className="text-xs text-slate-700 dark:text-slate-300 flex flex-wrap gap-4 pt-1">
               <p><strong>Allergies signalées :</strong> {searchResult.patient.allergies.length > 0 ? searchResult.patient.allergies.join(", ") : "Aucune"}</p>
               <p><strong>Contact d&apos;urgence :</strong> {searchResult.patient.emergencyContact || "Non renseigné"}</p>
             </div>
@@ -516,6 +605,22 @@ export default function DoctorDashboard({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Modale d'accès d'urgence - Bris de Glace */}
+      {searchResult && (
+        <BreakGlassModal
+          isOpen={isBreakGlassOpen}
+          onClose={() => setIsBreakGlassOpen(false)}
+          patientId={searchResult.patient.id}
+          patientName={`${searchResult.patient.firstName} ${searchResult.patient.lastName}`}
+          patientPhone={searchResult.patient.phone}
+          onSuccess={(log, smsAlert) => {
+            setBreakGlassAlert({ log, smsAlert });
+            setIsBreakGlassOpen(false);
+            handleSearchPatient();
+          }}
+        />
       )}
 
     </div>
