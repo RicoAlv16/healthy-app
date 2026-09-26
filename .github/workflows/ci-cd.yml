@@ -1,0 +1,89 @@
+name: Care.bj CI/CD Pipeline & Vercel Deployment
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 1. Validation de la Qualité du Code, Linting & Typecheck
+  quality-check:
+    name: 🔍 Qualité, Lint & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Génération Client Prisma
+        run: npx prisma generate
+
+      - name: Vérification Lint (ESLint)
+        run: npm run lint
+
+      - name: Validation des Types TypeScript
+        run: npx tsc --noEmit
+
+      - name: Test de Build Next.js
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_ci?schema=public"
+          JWT_SECRET: "ci_cd_test_secret_key_for_build_validation_only"
+          NODE_ENV: "production"
+        run: npm run build
+
+  # 2. Déploiement Automatique vers Vercel
+  deploy-vercel:
+    name: 🚀 Déploiement Vercel
+    needs: quality-check
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Vérification Secrets Vercel
+        id: check-secrets
+        run: |
+          if [ -n "${{ secrets.VERCEL_TOKEN }}" ] && [ -n "${{ secrets.VERCEL_ORG_ID }}" ] && [ -n "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "has_secrets=true" >> $GITHUB_OUTPUT
+            echo "✅ Secrets Vercel détectés pour déploiement via CLI"
+          else
+            echo "has_secrets=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Déploiement géré automatiquement par l'intégration Vercel GitHub App"
+          fi
+
+      - name: Déploiement CLI Vercel (si tokens configurés)
+        if: steps.check-secrets.outputs.has_secrets == 'true'
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./
+
+      - name: Statut Déploiement
+        run: |
+          echo "=========================================================="
+          echo "🎉 Pipeline CI/CD terminé avec succès !"
+          echo "Toutes les étapes de qualité, de typage et de build sont validées."
+          echo "=========================================================="
