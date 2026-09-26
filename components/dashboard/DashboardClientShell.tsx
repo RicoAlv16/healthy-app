@@ -28,6 +28,7 @@ export default function DashboardClientShell({
   const [prescriptions, setPrescriptions] = useState<PrescriptionRecord[]>(initialPrescriptions);
   const [vaccinations, setVaccinations] = useState<VaccinationRecord[]>(initialVaccinations);
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+  const [isBookAppointmentOpen, setIsBookAppointmentOpen] = useState(false);
 
   const handleRefresh = async () => {
     try {
@@ -85,6 +86,7 @@ export default function DashboardClientShell({
       <DashboardSidebar
         user={user}
         onOpenCard={() => setIsCardModalOpen(true)}
+        onOpenBookAppointment={() => setIsBookAppointmentOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -110,6 +112,9 @@ export default function DashboardClientShell({
             prescriptions={prescriptions}
             vaccinations={vaccinations}
             onRefresh={handleRefresh}
+            isBookAppointmentOpen={isBookAppointmentOpen}
+            onOpenBookAppointment={() => setIsBookAppointmentOpen(true)}
+            onCloseBookAppointment={() => setIsBookAppointmentOpen(false)}
           />
         )}
       </main>

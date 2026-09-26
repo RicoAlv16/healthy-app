@@ -186,7 +186,15 @@ export default function DoctorDashboard({
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => document.getElementById("appointments")?.scrollIntoView({ behavior: "smooth" })}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-teal-800/80 hover:bg-teal-700 text-white font-bold text-xs shadow-lg transition-all active:scale-95 whitespace-nowrap border border-teal-500/30"
+            >
+              <Calendar className="w-4 h-4 text-teal-300" />
+              <span>Consultations & Visios ({appointments.length})</span>
+            </button>
+
             <button
               onClick={() => setIsPrescriptionModalOpen(true)}
               className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-lg transition-all active:scale-95 whitespace-nowrap"
@@ -199,7 +207,7 @@ export default function DoctorDashboard({
       </div>
 
       {/* 2. Recherche Rapide Dossier Patient par NPI */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+      <div id="search" className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs scroll-mt-24">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -384,7 +392,7 @@ export default function DoctorDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Rendez-vous Praticien */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div id="appointments" className="scroll-mt-24 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
             <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Calendar className="w-5 h-5 text-teal-600" />
@@ -493,7 +501,7 @@ export default function DoctorDashboard({
         </div>
 
         {/* Ordonnances délivrées par le médecin */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div id="prescriptions" className="scroll-mt-24 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
             <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <FilePlus className="w-5 h-5 text-teal-600" />

@@ -14,7 +14,8 @@ import {
   ScanLine, 
   ShieldCheck, 
   PhoneCall, 
-  FileCheck
+  FileCheck,
+  Syringe
 } from "lucide-react";
 
 interface SidebarLink {
@@ -28,30 +29,40 @@ interface SidebarLink {
 interface DashboardSidebarProps {
   user: SafeUser;
   onOpenCard?: () => void;
+  onOpenBookAppointment?: () => void;
 }
 
-export default function DashboardSidebar({ user, onOpenCard }: DashboardSidebarProps) {
+export default function DashboardSidebar({ user, onOpenCard, onOpenBookAppointment }: DashboardSidebarProps) {
   const pathname = usePathname();
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   const getPatientLinks = (): SidebarLink[] => [
     { label: "Vue Générale", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Carte Sanitaire ANIP", onClick: onOpenCard, icon: CreditCard, highlight: true },
-    { label: "Signes Vitaux", href: "/dashboard#vitals", icon: Activity },
-    { label: "Mes E-Ordonnances", href: "/dashboard#prescriptions", icon: FileText },
-    { label: "Rendez-vous CNHU", href: "/dashboard#appointments", icon: Calendar },
+    { label: "Prendre un Rendez-vous", onClick: onOpenBookAppointment, icon: Calendar, highlight: true },
+    { label: "Mes Rendez-vous & Visios", onClick: () => scrollToSection("appointments"), icon: Calendar },
+    { label: "Carte Sanitaire ANIP", onClick: onOpenCard, icon: CreditCard },
+    { label: "Signes Vitaux", onClick: () => scrollToSection("vitals"), icon: Activity },
+    { label: "Mes E-Ordonnances", onClick: () => scrollToSection("prescriptions"), icon: FileText },
+    { label: "Carnet Vaccinal PEV", onClick: () => scrollToSection("vaccines"), icon: Syringe },
   ];
 
   const getDoctorLinks = (): SidebarLink[] => [
     { label: "Tableau de Bord", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Dossiers Patients NPI", href: "/dashboard#search", icon: Stethoscope },
-    { label: "Rendez-vous & Queue", href: "/dashboard#appointments", icon: Calendar },
-    { label: "Prescriptions Émises", href: "/dashboard#prescriptions", icon: FileText },
+    { label: "Dossiers Patients NPI", onClick: () => scrollToSection("search"), icon: Stethoscope },
+    { label: "Consultations & Visios", onClick: () => scrollToSection("appointments"), icon: Calendar, highlight: true },
+    { label: "Prescriptions Émises", onClick: () => scrollToSection("prescriptions"), icon: FileText },
   ];
 
   const getPharmacyLinks = (): SidebarLink[] => [
     { label: "Guichet Officine", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Valider une Ordonnance", href: "/dashboard#scanner", icon: ScanLine },
-    { label: "Délivrances Traitées", href: "/dashboard#history", icon: FileCheck },
+    { label: "Valider une Ordonnance", onClick: () => scrollToSection("scanner"), icon: ScanLine, highlight: true },
+    { label: "Délivrances Traitées", onClick: () => scrollToSection("history"), icon: FileCheck },
   ];
 
   const links: SidebarLink[] =
@@ -85,9 +96,13 @@ export default function DashboardSidebar({ user, onOpenCard }: DashboardSidebarP
                 <button
                   key={idx}
                   onClick={link.onClick}
-                  className="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-xs font-bold text-teal-700 dark:text-teal-300 bg-teal-50/80 dark:bg-teal-950/40 hover:bg-teal-100 transition-colors text-left"
+                  className={`flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                    link.highlight
+                      ? "bg-teal-600 text-white hover:bg-teal-500 shadow-md shadow-teal-600/20 active:scale-95"
+                      : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
                 >
-                  <Icon className="w-4 h-4 text-teal-600" />
+                  <Icon className={`w-4 h-4 ${link.highlight ? "text-white" : "text-teal-600"}`} />
                   <span>{link.label}</span>
                 </button>
               );
