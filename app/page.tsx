@@ -24,6 +24,60 @@ export default function Home() {
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
 
+  React.useEffect(() => {
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated && data.user) {
+            let roleDisplay = "Citoyen Assuré ARCH";
+            if (data.user.role === "doctor") {
+              roleDisplay = `Médecin ${data.user.professionalId || "CNHU"}`;
+            } else if (data.user.role === "pharmacy") {
+              roleDisplay = `Officine ${data.user.professionalId || "Agréée"}`;
+            }
+            setCurrentUser({
+              name: `${data.user.firstName} ${data.user.lastName}`,
+              role: roleDisplay,
+              id: data.user.npi || data.user.id,
+            });
+            return;
+          }
+        }
+
+        const saved = localStorage.getItem("carebj_user");
+        if (saved) {
+          const user = JSON.parse(saved);
+          setCurrentUser({
+            name: `${user.firstName} ${user.lastName}`,
+            role:
+              user.role === "doctor"
+                ? "Médecin CNHU"
+                : user.role === "pharmacy"
+                ? "Officine Pharmacie"
+                : "Citoyen Assuré ARCH",
+            id: user.npi || user.id,
+          });
+        }
+      } catch {
+        // Mode hors-ligne toléré
+      }
+    }
+
+    checkSession();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Ignorer
+    }
+    localStorage.removeItem("carebj_user");
+    setCurrentUser(null);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors selection:bg-teal-500 selection:text-white">
       {/* 1. Barre de Navigation avec sélecteur de langues locales & statut réseau internet */}
@@ -33,7 +87,7 @@ export default function Home() {
         onToggleVoiceModal={() => setVoiceModalOpen(true)}
         onOpenAuthModal={() => setAuthModalOpen(true)}
         currentUser={currentUser}
-        onLogout={() => setCurrentUser(null)}
+        onLogout={handleLogout}
       />
 
       {/* 2. Barre d'Urgence Immédiate SAMU Bénin 112 */}

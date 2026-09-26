@@ -227,10 +227,10 @@ export default function Navbar({
               </button>
             ) : (
               <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 py-1 px-3 rounded-full border border-slate-200 dark:border-slate-700">
-                <div className="text-right">
+                <Link href="/dashboard" className="text-right hover:opacity-80 transition-opacity">
                   <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">{currentUser.name}</p>
-                  <p className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold">{currentUser.role}</p>
-                </div>
+                  <p className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold">{currentUser.role} • Dashboard →</p>
+                </Link>
                 <button
                   onClick={onLogout}
                   className="w-5 h-5 flex items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 hover:bg-rose-200 text-[10px] font-bold"

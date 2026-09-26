@@ -28,7 +28,7 @@ export default function RegisterForm() {
     npi: "",
     professionalId: "",
     email: "",
-    phone: "+229 ",
+    phone: "",
     password: "",
     confirmPassword: "",
     acceptTerms: false,
@@ -70,49 +70,6 @@ export default function RegisterForm() {
     }
   }
 
-  // Remplissage rapide démo
-  const handleQuickDemo = (targetRole: UserRole) => {
-    setRole(targetRole);
-    if (targetRole === "patient") {
-      setFormData({
-        firstName: "Bio Kora",
-        lastName: "BIO",
-        npi: "1092-8472-9104",
-        professionalId: "",
-        email: "bio.kora@citoyen.bj",
-        phone: "+229 97 12 34 56",
-        password: "CitoyenSecure@2026",
-        confirmPassword: "CitoyenSecure@2026",
-        acceptTerms: true,
-      });
-    } else if (targetRole === "doctor") {
-      setFormData({
-        firstName: "Florent",
-        lastName: "AGBO",
-        npi: "9876-5432-1098",
-        professionalId: "ONMB-4812",
-        email: "dr.agbo@cnhu.bj",
-        phone: "+229 95 44 33 22",
-        password: "DoctorSecure@2026",
-        confirmPassword: "DoctorSecure@2026",
-        acceptTerms: true,
-      });
-    } else {
-      setFormData({
-        firstName: "Amina",
-        lastName: "SOUROU",
-        npi: "5432-1098-7654",
-        professionalId: "ABMED-OFFICINE-2024",
-        email: "contact@pharmacie-guezo.bj",
-        phone: "+229 96 88 77 66",
-        password: "PharmacieSecure@2026",
-        confirmPassword: "PharmacieSecure@2026",
-        acceptTerms: true,
-      });
-    }
-    setErrors({});
-  };
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -151,16 +108,48 @@ export default function RegisterForm() {
       return;
     }
 
-    // Simulation de création de compte
+    // Appel réel à l'API d'inscription
     try {
-      await new Promise((resolve) => setTimeout(resolve, 900));
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          npi: formData.npi ? formData.npi : undefined,
+          professionalId: formData.professionalId ? formData.professionalId : undefined,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+          acceptTerms: formData.acceptTerms,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setErrors({
+          general: data.message || "Erreur lors de la création de votre dossier de santé.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        localStorage.setItem("carebj_user", JSON.stringify(data.user));
+      }
+
       setIsSuccess(true);
       setTimeout(() => {
-        router.push("/login");
-      }, 1200);
-    } catch {
+        router.push("/");
+        router.refresh();
+      }, 1000);
+    } catch (err) {
+      console.error("Erreur d'inscription :", err);
       setErrors({
-        general: "Erreur lors de la création du compte. Veuillez réessayer.",
+        general: "Impossible de joindre le serveur d'authentification. Réessayez dans un instant.",
       });
     } finally {
       setIsLoading(false);
@@ -221,34 +210,6 @@ export default function RegisterForm() {
           >
             <span className="text-base">💊</span>
             <span>Officine Pharmacie</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Remplissage de test rapide */}
-      <div className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-400">
-        <span className="font-medium">Remplissage automatique :</span>
-        <div className="flex gap-1.5">
-          <button
-            type="button"
-            onClick={() => handleQuickDemo("patient")}
-            className="px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 border border-slate-200 dark:border-slate-600 font-semibold"
-          >
-            Patient
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickDemo("doctor")}
-            className="px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 border border-slate-200 dark:border-slate-600 font-semibold"
-          >
-            Médecin
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickDemo("pharmacy")}
-            className="px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 border border-slate-200 dark:border-slate-600 font-semibold"
-          >
-            Pharmacie
           </button>
         </div>
       </div>

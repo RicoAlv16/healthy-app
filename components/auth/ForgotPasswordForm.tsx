@@ -10,12 +10,6 @@ export default function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Démo rapide
-  const handleQuickDemo = (val: string) => {
-    setIdentifier(val);
-    setError(undefined);
-  };
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(undefined);
@@ -30,12 +24,26 @@ export default function ForgotPasswordForm() {
       return;
     }
 
-    // Simulation d'envoi d'instructions par e-mail ou SMS
+    // Appel réel à l'API de réinitialisation
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setError(data.message || "Impossible de traiter la demande.");
+        setIsLoading(false);
+        return;
+      }
+
       setIsSubmitted(true);
-    } catch {
-      setError("Une erreur est survenue lors de l'envoi de la demande.");
+    } catch (err) {
+      console.error("Erreur récupération mot de passe :", err);
+      setError("Une erreur est survenue lors de l'envoi de la demande. Vérifiez votre réseau.");
     } finally {
       setIsLoading(false);
     }
@@ -86,27 +94,6 @@ export default function ForgotPasswordForm() {
 
   return (
     <div className="space-y-6">
-      {/* Raccourcis test rapide */}
-      <div className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-400">
-        <span className="font-medium">Test rapide :</span>
-        <div className="flex gap-1.5">
-          <button
-            type="button"
-            onClick={() => handleQuickDemo("bio.kora@citoyen.bj")}
-            className="px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 border border-slate-200 dark:border-slate-600 font-semibold"
-          >
-            E-mail
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickDemo("+229 97 12 34 56")}
-            className="px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 border border-slate-200 dark:border-slate-600 font-semibold"
-          >
-            SMS (+229)
-          </button>
-        </div>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label

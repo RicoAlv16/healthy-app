@@ -1,0 +1,523 @@
+"use client";
+
+import React, { useState } from "react";
+import { SafeUser, AppointmentRecord, PrescriptionRecord, VitalSignRecord } from "@/lib/db";
+import { 
+  Stethoscope, 
+  Search, 
+  FilePlus, 
+  Calendar, 
+  Plus, 
+  Trash2
+} from "lucide-react";
+
+interface DoctorDashboardProps {
+  user: SafeUser;
+  appointments: AppointmentRecord[];
+  prescriptions: PrescriptionRecord[];
+  onRefresh: () => void;
+}
+
+interface PatientSearchResult {
+  id: string;
+  firstName: string;
+  lastName: string;
+  npi?: string | null;
+  phone: string;
+  email: string;
+  bloodGroup?: string | null;
+  archNumber?: string | null;
+  emergencyContact?: string | null;
+  allergies: string[];
+}
+
+export default function DoctorDashboard({
+  user,
+  appointments,
+  prescriptions,
+  onRefresh,
+}: DoctorDashboardProps) {
+  // Recherche dossier patient
+  const [searchQuery, setSearchQuery] = useState("1092-8472-9104");
+  const [searching, setSearching] = useState(false);
+  const [searchResult, setSearchResult] = useState<{
+    patient: PatientSearchResult;
+    vitals: VitalSignRecord[];
+    prescriptions: PrescriptionRecord[];
+    appointments: AppointmentRecord[];
+  } | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  // Formulaire nouvelle e-prescription
+  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [prescripPatientId, setPrescripPatientId] = useState("");
+  const [medications, setMedications] = useState([
+    { name: "Artemether + Luméfantrine (Coartem 80/480mg)", dosage: "1 comprimé matin et soir avec un repas gras", duration: "3 jours", quantity: "1 boîte", instructions: "Traitement antipaludique complet" },
+    { name: "Vitamine C 500mg à croquer", dosage: "1 comprimé le matin", duration: "10 jours", quantity: "1 tube", instructions: "Ne pas prendre après 16h" },
+  ]);
+  const [creatingPrescription, setCreatingPrescription] = useState(false);
+  const [prescriptionSuccess, setPrescriptionSuccess] = useState<string | null>(null);
+
+  const handleSearchPatient = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    setSearching(true);
+    setSearchError(null);
+
+    try {
+      const res = await fetch(`/api/doctor/search-patient?query=${encodeURIComponent(searchQuery.trim())}`);
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setSearchError(data.message || "Dossier introuvable dans le registre ANIP.");
+        setSearchResult(null);
+        return;
+      }
+
+      setSearchResult(data);
+      setPrescripPatientId(data.patient.id);
+    } catch (err) {
+      console.error("Erreur recherche patient:", err);
+      setSearchError("Erreur réseau lors de la recherche du dossier.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleAddMedication = () => {
+    setMedications([
+      ...medications,
+      { name: "", dosage: "", duration: "", quantity: "1 boîte", instructions: "" },
+    ]);
+  };
+
+  const handleRemoveMedication = (index: number) => {
+    setMedications(medications.filter((_, i) => i !== index));
+  };
+
+  const handleMedChange = (index: number, field: "name" | "dosage" | "duration" | "quantity" | "instructions", val: string) => {
+    const updated = [...medications];
+    updated[index] = { ...updated[index], [field]: val };
+    setMedications(updated);
+  };
+
+  const handleCreatePrescription = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prescripPatientId) {
+      alert("Veuillez sélectionner un patient.");
+      return;
+    }
+
+    setCreatingPrescription(true);
+    setPrescriptionSuccess(null);
+
+    try {
+      const res = await fetch("/api/prescriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: prescripPatientId,
+          medications,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert(data.message || "Erreur lors de l'émission");
+        setCreatingPrescription(false);
+        return;
+      }
+
+      setPrescriptionSuccess(`Ordonnance ${data.prescription.code} émise et signée numériquement avec succès.`);
+      onRefresh();
+      setTimeout(() => {
+        setIsPrescriptionModalOpen(false);
+        setPrescriptionSuccess(null);
+      }, 1500);
+    } catch (err) {
+      console.error("Erreur création ordonnance:", err);
+      alert("Erreur réseau");
+    } finally {
+      setCreatingPrescription(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      
+      {/* 1. Header Praticien CNHU */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl border border-teal-500/30">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-teal-500/20 text-teal-300 border border-teal-400/30">
+                Ordre National des Médecins : {user.professionalId || "ONMB-4812"}
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                CNHU-HKM Cotonou
+              </span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
+              <Stethoscope className="w-8 h-8 text-teal-400" />
+              <span>Dr. {user.firstName} {user.lastName}</span>
+            </h1>
+            <p className="text-sm text-slate-300 max-w-xl">
+              Portail Hospitalier Souverain d&apos;e-Santé. Consultation des dossiers patients nationaux ANIP, suivi des constantes et télé-prescription.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsPrescriptionModalOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-lg transition-all active:scale-95 whitespace-nowrap"
+            >
+              <FilePlus className="w-4 h-4" />
+              <span>Émettre une E-Ordonnance</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Recherche Rapide Dossier Patient par NPI */}
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Search className="w-5 h-5 text-teal-600" />
+              <span>Recherche Dossier Médical Patient (Registre ANIP)</span>
+            </h2>
+            <p className="text-xs text-slate-500">
+              Saisissez le NPI (Numéro Personnel d&apos;Identification), l&apos;email ou le téléphone du patient
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSearchPatient} className="mt-4 flex gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Ex: 1092-8472-9104 ou bio.kora@citoyen.bj"
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={searching}
+            className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-teal-700 text-white dark:bg-teal-600 dark:hover:bg-teal-500 font-bold text-xs shadow-md transition-all active:scale-95 flex items-center gap-2"
+          >
+            {searching ? "Recherche en cours..." : "Consulter le dossier"}
+          </button>
+        </form>
+
+        {searchError && (
+          <div className="mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-300 text-xs border border-red-200 dark:border-red-900">
+            {searchError}
+          </div>
+        )}
+
+        {/* Résultat de la recherche Dossier Patient */}
+        {searchResult && (
+          <div className="mt-6 p-5 rounded-2xl bg-teal-50/50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800/60 animate-fade-in space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-teal-200/60 dark:border-teal-800/60 gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-teal-600 text-white font-black text-lg flex items-center justify-center">
+                  {searchResult.patient.firstName[0]}{searchResult.patient.lastName[0]}
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white uppercase">
+                    {searchResult.patient.lastName} {searchResult.patient.firstName}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                    <span className="font-mono font-bold text-teal-800 dark:text-teal-300">NPI: {searchResult.patient.npi}</span>
+                    <span>•</span>
+                    <span className="font-mono text-emerald-800 dark:text-emerald-400">ARCH: {searchResult.patient.archNumber}</span>
+                    <span>•</span>
+                    <span>Tél: {searchResult.patient.phone}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                  Groupe : {searchResult.patient.bloodGroup || "O+"}
+                </span>
+                <button
+                  onClick={() => {
+                    setPrescripPatientId(searchResult.patient.id);
+                    setIsPrescriptionModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs"
+                >
+                  + Rédiger ordonnance
+                </button>
+              </div>
+            </div>
+
+            {/* Constantes vitales du patient */}
+            <div>
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-2">
+                Constantes vitales enregistrées :
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {searchResult.vitals.slice(0, 4).map((v) => (
+                  <div key={v.id} className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <p className="text-[10px] text-slate-500 uppercase font-semibold">{v.type.replace("_", " ")}</p>
+                    <p className="text-sm font-black text-slate-900 dark:text-white font-mono mt-0.5">
+                      {v.value} {v.unit}
+                    </p>
+                    <p className="text-[9px] text-slate-400 mt-1">
+                      {new Date(v.measuredAt).toLocaleDateString("fr-BJ")}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Allergies et contact d'urgence */}
+            <div className="text-xs text-slate-700 dark:text-slate-300 flex flex-wrap gap-4">
+              <p><strong>Allergies signalées :</strong> {searchResult.patient.allergies.length > 0 ? searchResult.patient.allergies.join(", ") : "Aucune"}</p>
+              <p><strong>Contact d&apos;urgence :</strong> {searchResult.patient.emergencyContact || "Non renseigné"}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. File des Consultations et Rendez-vous Praticien */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Rendez-vous Praticien */}
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-teal-600" />
+              <span>Consultations & Rendez-vous Programmés</span>
+            </h3>
+            <span className="text-xs font-bold text-teal-600">
+              {appointments.length} patient(s)
+            </span>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {appointments.length === 0 ? (
+              <p className="py-6 text-center text-slate-400 text-xs">Aucun rendez-vous planifié.</p>
+            ) : (
+              appointments.map((a) => (
+                <div key={a.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-black text-slate-900 dark:text-white">
+                        {a.patient?.firstName} {a.patient?.lastName}
+                      </p>
+                      <p className="text-xs text-slate-500 font-mono">
+                        NPI: {a.patient?.npi} • ARCH: {a.patient?.archNumber}
+                      </p>
+                      <p className="text-xs text-teal-700 dark:text-teal-400 mt-1">
+                        {new Date(a.dateTime).toLocaleDateString("fr-BJ", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setSearchQuery(a.patient?.npi || a.patient?.phone || "");
+                        handleSearchPatient();
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-teal-600 text-white text-xs font-bold transition-colors"
+                    >
+                      Dossier
+                    </button>
+                  </div>
+                  {a.notes && (
+                    <p className="text-xs text-slate-600 dark:text-slate-400 italic">
+                      Motif : {a.notes}
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Ordonnances délivrées par le médecin */}
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <FilePlus className="w-5 h-5 text-teal-600" />
+              <span>Dernières Ordonnances Émises</span>
+            </h3>
+            <span className="text-xs font-bold text-teal-600">
+              {prescriptions.length} émise(s)
+            </span>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {prescriptions.length === 0 ? (
+              <p className="py-6 text-center text-slate-400 text-xs">Aucune ordonnance émise récemment.</p>
+            ) : (
+              prescriptions.map((p) => (
+                <div key={p.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-mono text-xs font-black text-teal-600 dark:text-teal-400">{p.code}</span>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        Patient : {p.patient?.firstName} {p.patient?.lastName}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        Émise le {new Date(p.issuedAt).toLocaleDateString("fr-BJ")}
+                      </p>
+                    </div>
+
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      p.status === "active" ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"
+                    }`}>
+                      {p.status === "active" ? "Active" : "Délivrée"}
+                    </span>
+                  </div>
+
+                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">
+                    {p.medications.map((m, idx) => (
+                      <div key={idx} className="flex justify-between text-[11px]">
+                        <span>• {m.name}</span>
+                        <span className="text-slate-400">{m.duration}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Modale d'émission d'ordonnance */}
+      {isPrescriptionModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800">
+              Émission d&apos;une Ordonnance Électronique Souveraine
+            </h3>
+
+            {prescriptionSuccess && (
+              <div className="my-3 p-3 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
+                {prescriptionSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleCreatePrescription} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  ID du Patient (NPI ou interne) :
+                </label>
+                <input
+                  type="text"
+                  value={prescripPatientId}
+                  onChange={(e) => setPrescripPatientId(e.target.value)}
+                  placeholder="ID du patient (ex: usr_patient_001)"
+                  required
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">
+                    Médicaments prescrits :
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddMedication}
+                    className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Ajouter un médicament</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {medications.map((m, idx) => (
+                    <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-teal-600">Médicament #{idx + 1}</span>
+                        {medications.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMedication(idx)}
+                            className="text-rose-500 hover:text-rose-700 p-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={m.name}
+                          onChange={(e) => handleMedChange(idx, "name", e.target.value)}
+                          placeholder="Nom de la molécule / spécialité"
+                          required
+                          className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs bg-white dark:bg-slate-900"
+                        />
+                        <input
+                          type="text"
+                          value={m.dosage}
+                          onChange={(e) => handleMedChange(idx, "dosage", e.target.value)}
+                          placeholder="Posologie (ex: 1 gélule 3 fois/jour)"
+                          required
+                          className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs bg-white dark:bg-slate-900"
+                        />
+                        <input
+                          type="text"
+                          value={m.duration}
+                          onChange={(e) => handleMedChange(idx, "duration", e.target.value)}
+                          placeholder="Durée (ex: 7 jours)"
+                          required
+                          className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs bg-white dark:bg-slate-900"
+                        />
+                        <input
+                          type="text"
+                          value={m.instructions}
+                          onChange={(e) => handleMedChange(idx, "instructions", e.target.value)}
+                          placeholder="Instructions particulières"
+                          className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs bg-white dark:bg-slate-900"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsPrescriptionModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingPrescription}
+                  className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-md shadow-teal-600/20"
+                >
+                  {creatingPrescription ? "Signature & Envoi..." : "Signer & Émettre l'ordonnance"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}

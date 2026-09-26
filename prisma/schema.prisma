@@ -1,0 +1,114 @@
+// Schéma Prisma pour la plateforme nationale d'e-Santé du Bénin (Care.bj)
+// Base de données : PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+  PHARMACY
+  ADMIN
+}
+
+model User {
+  id             String    @id @default(cuid())
+  role           Role      @default(PATIENT)
+  firstName      String
+  lastName       String
+  email          String    @unique
+  phone          String    @unique
+  passwordHash   String
+  npi            String?   @unique // Numéro Personnel d'Identification ANIP Bénin
+  professionalId String?   // N° Ordre ONMB ou Agrément ABMed
+  archNumber     String?   // Numéro Assuré ARCH Bénin
+  bloodGroup     String?   // Groupe sanguin (O+, A+, etc.)
+  allergies      String[]  @default([])
+  emergencyContact String? // Nom et numéro du proche à contacter en urgence
+  isVerified     Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  vitalSigns              VitalSign[]
+  patientAppointments     Appointment[]    @relation("PatientAppointments")
+  doctorAppointments      Appointment[]    @relation("DoctorAppointments")
+  patientPrescriptions    Prescription[]   @relation("PatientPrescriptions")
+  doctorPrescriptions     Prescription[]   @relation("DoctorPrescriptions")
+  pharmacyPrescriptions   Prescription[]   @relation("PharmacyPrescriptions")
+
+  @@index([email])
+  @@index([phone])
+  @@index([npi])
+  @@map("users")
+}
+
+model OtpRecord {
+  id         String   @id @default(cuid())
+  identifier String   // Téléphone (+229), email ou NPI
+  code       String
+  purpose    String   // 'login' | 'register' | 'reset-password'
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  verified   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([identifier, purpose, verified])
+  @@map("otp_records")
+}
+
+model VitalSign {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // 'blood_pressure', 'glucose', 'weight', 'heart_rate', 'temperature'
+  value       String   // e.g. "12/8", "0.95", "68.5", "72"
+  unit        String   // e.g. "mmHg", "g/L", "kg", "bpm", "°C"
+  status      String   @default("normal") // 'normal', 'warning', 'critical'
+  measuredAt  DateTime @default(now())
+
+  @@index([userId, type])
+  @@map("vital_signs")
+}
+
+model Appointment {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     User     @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId    String
+  doctor      User     @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: Cascade)
+  dateTime    DateTime
+  type        String   @default("in_person") // 'in_person', 'teleconsultation'
+  status      String   @default("confirmed") // 'scheduled', 'confirmed', 'completed', 'cancelled'
+  facility    String   // e.g. "CNHU-HKM Cotonou - Service Pédiatrie"
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@map("appointments")
+}
+
+model Prescription {
+  id          String    @id @default(cuid())
+  code        String    @unique // e.g. "ORD-2026-8841"
+  patientId   String
+  patient     User      @relation("PatientPrescriptions", fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId    String
+  doctor      User      @relation("DoctorPrescriptions", fields: [doctorId], references: [id], onDelete: Cascade)
+  pharmacyId  String?
+  pharmacy    User?     @relation("PharmacyPrescriptions", fields: [pharmacyId], references: [id])
+  status      String    @default("active") // 'active', 'dispensed', 'expired'
+  medications Json      // Array of medications with dosage & duration
+  qrHash      String    // Hash sécurisé pour vérification QR code
+  issuedAt    DateTime  @default(now())
+  dispensedAt DateTime?
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@map("prescriptions")
+}

@@ -1,0 +1,41 @@
+services:
+  # Base de données relationnelle PostgreSQL pour Care.bj
+  postgres:
+    image: postgres:16-alpine
+    container_name: carebj_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: carebj_admin
+      POSTGRES_PASSWORD: carebj_secure_pwd_2026
+      POSTGRES_DB: carebj_health_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - carebj_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carebj_admin -d carebj_health_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Application Next.js conteneurisée
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: carebj_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://carebj_admin:carebj_secure_pwd_2026@postgres:5432/carebj_health_db?schema=public
+      JWT_SECRET: care-bj-sante-sovereign-secret-key-benin-2026-very-secure-random-token
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "3000:3000"
+
+volumes:
+  carebj_pgdata:
+    name: carebj_pgdata

@@ -23,22 +23,6 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Pré-remplissage rapide pour test / démo
-  const handleQuickDemo = (demoRole: UserRole) => {
-    setRole(demoRole);
-    if (demoRole === "patient") {
-      setIdentifier("1092-8472-9104"); // NPI ANIP
-      setPassword("BeninSante@2026");
-    } else if (demoRole === "doctor") {
-      setIdentifier("dr.agbo@cnhu.bj");
-      setPassword("DoctorPass@2026");
-    } else {
-      setIdentifier("contact@pharmacie-guezo.bj");
-      setPassword("Pharmacie@2026");
-    }
-    setErrors({});
-  };
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrors({});
@@ -61,16 +45,43 @@ export default function LoginForm() {
       return;
     }
 
-    // Simulation d'authentification API
+    // Appel réel à l'API d'authentification
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          identifier,
+          password,
+          role,
+          rememberMe,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setErrors({
+          general: data.message || "Identifiant ou mot de passe incorrect.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Stockage de secours pour l'état côté client
+      if (data.user) {
+        localStorage.setItem("carebj_user", JSON.stringify(data.user));
+      }
+
       setIsSuccess(true);
       setTimeout(() => {
-        router.push("/");
-      }, 1000);
-    } catch {
+        router.push("/dashboard");
+        router.refresh();
+      }, 800);
+    } catch (err) {
+      console.error("Erreur de connexion :", err);
       setErrors({
-        general: "Une erreur est survenue lors de la tentative de connexion.",
+        general: "Impossible de joindre le serveur d'authentification. Vérifiez votre connexion.",
       });
     } finally {
       setIsLoading(false);
@@ -153,34 +164,6 @@ export default function LoginForm() {
           >
             <span className="text-base">💊</span>
             <span>Pharmacie</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Raccourcis de démo rapide */}
-      <div className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-400">
-        <span className="font-medium">Remplissage test :</span>
-        <div className="flex gap-1.5">
-          <button
-            type="button"
-            onClick={() => handleQuickDemo("patient")}
-            className="px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 border border-slate-200 dark:border-slate-600 font-semibold"
-          >
-            Patient
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickDemo("doctor")}
-            className="px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 border border-slate-200 dark:border-slate-600 font-semibold"
-          >
-            Médecin
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickDemo("pharmacy")}
-            className="px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 border border-slate-200 dark:border-slate-600 font-semibold"
-          >
-            Pharmacie
           </button>
         </div>
       </div>

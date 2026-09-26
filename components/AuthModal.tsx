@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -10,45 +11,97 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
   const [role, setRole] = useState<'patient' | 'doctor' | 'pharmacy'>('patient');
-  const [identifier, setIdentifier] = useState('1092-8472-9104');
-  const [phone, setPhone] = useState('+229 97 12 34 56');
+  const [identifier, setIdentifier] = useState('');
+  const [phone, setPhone] = useState('');
   const [otpStep, setOtpStep] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setApiError(null);
+
+    try {
+      const response = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          identifier,
+          phone,
+          role,
+          purpose: "login",
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        setApiError(data.message || "Erreur d'envoi du code.");
+        setLoading(false);
+        return;
+      }
+
       setOtpStep(true);
-      setOtpCode('2290'); // Code pré-rempli pour test rapide
-    }, 800);
+      setOtpCode('');
+    } catch (err) {
+      console.error("Erreur OTP send:", err);
+      setApiError("Impossible de joindre le serveur.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      let userName = "BIO KORA Bio";
-      let userRole = "Citoyen Assuré ARCH";
-      if (role === 'doctor') {
-        userName = "Dr. Florent AGBO";
-        userRole = "Médecin Pédiatre CNHU (ONMB #4812)";
-      } else if (role === 'pharmacy') {
-        userName = "Pharmacie Camp Guézo";
-        userRole = "Officine Agréée ABMed";
-      }
-      onLoginSuccess({
-        name: userName,
-        role: userRole,
-        id: identifier
+    setApiError(null);
+
+    try {
+      const response = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          identifier,
+          phone,
+          code: otpCode,
+          purpose: "login",
+          role,
+        }),
       });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        setApiError(data.message || "Code invalide.");
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        localStorage.setItem("carebj_user", JSON.stringify(data.user));
+        let roleDisplay = "Citoyen Assuré ARCH";
+        if (data.user.role === "doctor") {
+          roleDisplay = `Médecin ${data.user.professionalId || "CNHU"}`;
+        } else if (data.user.role === "pharmacy") {
+          roleDisplay = `Officine ${data.user.professionalId || "Agréée"}`;
+        }
+
+        onLoginSuccess({
+          name: `${data.user.firstName} ${data.user.lastName}`,
+          role: roleDisplay,
+          id: data.user.npi || data.user.id,
+        });
+      }
+
       onClose();
-    }, 600);
+    } catch (err) {
+      console.error("Erreur OTP verify:", err);
+      setApiError("Erreur de validation réseau.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -80,7 +133,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
         <div className="grid grid-cols-3 gap-2 my-4">
           <button
             type="button"
-            onClick={() => { setRole('patient'); setOtpStep(false); }}
+            onClick={() => { setRole('patient'); setOtpStep(false); setApiError(null); }}
             className={`p-2 rounded-xl text-xs font-bold border transition-all text-center ${
               role === 'patient'
                 ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
@@ -91,7 +144,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
           </button>
           <button
             type="button"
-            onClick={() => { setRole('doctor'); setOtpStep(false); }}
+            onClick={() => { setRole('doctor'); setOtpStep(false); setApiError(null); }}
             className={`p-2 rounded-xl text-xs font-bold border transition-all text-center ${
               role === 'doctor'
                 ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
@@ -102,7 +155,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
           </button>
           <button
             type="button"
-            onClick={() => { setRole('pharmacy'); setOtpStep(false); }}
+            onClick={() => { setRole('pharmacy'); setOtpStep(false); setApiError(null); }}
             className={`p-2 rounded-xl text-xs font-bold border transition-all text-center ${
               role === 'pharmacy'
                 ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
@@ -112,6 +165,12 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
             💊 Pharmacie
           </button>
         </div>
+
+        {apiError && (
+          <div className="my-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 text-xs">
+            {apiError}
+          </div>
+        )}
 
         {/* Formulaire étape 1 : Envoi OTP */}
         {!otpStep ? (
@@ -159,21 +218,23 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
         ) : (
           /* Formulaire étape 2 : Saisie OTP */
           <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-emerald-800 dark:text-emerald-300">
-              Code de test envoyé au {phone} : <strong>2290</strong>
+            <div className="p-3 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-xl text-xs text-teal-800 dark:text-teal-300 flex items-center gap-2">
+              <span>📩</span>
+              <span>Code de sécurité envoyé par SMS au <strong>{phone}</strong>.</span>
             </div>
 
             <div>
               <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                Saisissez le code secret à 4 chiffres :
+                Saisissez le code secret à 6 chiffres :
               </label>
               <input
                 type="text"
-                maxLength={4}
+                maxLength={6}
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value)}
                 required
-                className="w-full text-center tracking-[1em] text-2xl font-black py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500"
+                placeholder="••••••"
+                className="w-full text-center tracking-[0.5em] text-2xl font-black py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
@@ -186,6 +247,17 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
             </button>
           </form>
         )}
+
+        {/* Lien direct vers le portail complet */}
+        <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 text-center">
+          <Link
+            href="/login"
+            onClick={onClose}
+            className="text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline"
+          >
+            Se connecter avec mot de passe (Portail complet) →
+          </Link>
+        </div>
 
       </div>
     </div>
