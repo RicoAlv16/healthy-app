@@ -17,6 +17,7 @@ import {
   MicOff,
   Languages
 } from "lucide-react";
+import RichMessageContent from "./RichMessageContent";
 
 interface ChatAction {
   label: string;
@@ -455,10 +456,12 @@ export default function HealthAssistantChatbot() {
                           </div>
                         )}
 
-                        {/* Rendu du texte avec formatage simple des sauts de ligne et gras */}
-                        <div className="space-y-1.5 whitespace-pre-wrap">
-                          {msg.content}
-                        </div>
+                        {/* Rendu du texte avec formatage riche (titres, puces, étapes numérotées, gras, etc.) */}
+                        {isBot ? (
+                          <RichMessageContent content={msg.content} />
+                        ) : (
+                          <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                        )}
 
                         {/* Bouton de lecture audio TTS pour ce message */}
                         {isBot && (
