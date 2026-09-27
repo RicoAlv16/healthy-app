@@ -10,6 +10,7 @@ import {
   PhoneCall, 
   CreditCard
 } from "lucide-react";
+import ThemeToggle from "../ThemeToggle";
 
 interface DashboardHeaderProps {
   user: SafeUser;
@@ -134,6 +135,9 @@ export default function DashboardHeader({ user, onOpenCard }: DashboardHeaderPro
                 <span className="hidden sm:inline">Ma Carte</span>
               </button>
             )}
+
+            {/* Sélecteur Thème Clair / Sombre */}
+            <ThemeToggle />
 
             {/* Accessibilité Contraste */}
             <button

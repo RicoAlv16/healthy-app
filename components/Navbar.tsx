@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { translations, SupportedLang } from '@/lib/translations';
+import ThemeToggle from './ThemeToggle';
 
 interface UserSession {
   name: string;
@@ -176,11 +177,12 @@ export default function Navbar({
               </select>
             </div>
 
-            {/* 4. Accessibilité : Contraste & Zoom (Compact) */}
-            <div className="hidden sm:flex items-center gap-2 border-l border-slate-200 dark:border-teal-900 pl-2">
+            {/* 4. Thème Clair/Sombre & Accessibilité */}
+            <div className="flex items-center gap-2 border-l border-slate-200 dark:border-slate-800 pl-2">
+              <ThemeToggle />
               <button
                 onClick={toggleContrast}
-                className={`p-1.5 rounded-lg border text-xs transition-all ${
+                className={`hidden sm:inline-flex p-1.5 rounded-lg border text-xs transition-all ${
                   isHighContrast 
                     ? 'bg-yellow-400 text-black border-yellow-500 font-black' 
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
@@ -190,7 +192,7 @@ export default function Navbar({
               >
                 👁️
               </button>
-              <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 border border-slate-200 dark:border-slate-700">
+              <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 border border-slate-200 dark:border-slate-700">
                 <button 
                   onClick={() => adjustFontSize(-10)} 
                   className="px-1.5 py-0.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 rounded"
@@ -284,6 +286,11 @@ export default function Navbar({
           >
             {t.specs}
           </a>
+
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500">Thème d&apos;affichage</span>
+            <ThemeToggle variant="pill" showLabel />
+          </div>
         </div>
       )}
     </header>

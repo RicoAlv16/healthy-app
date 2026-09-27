@@ -1,5 +1,6 @@
 import Link from "next/link";
 import React from "react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function AuthLayout({
   children,
@@ -38,6 +39,7 @@ export default function AuthLayout({
           </Link>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link
               href="/"
               className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all hover:text-slate-900 dark:hover:text-white"
