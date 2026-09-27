@@ -92,13 +92,11 @@ export default function DashboardHeader({ user, onOpenCard }: DashboardHeaderPro
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
-                    Care<span className="text-teal-600">.bj</span>
+                    Care<span className="text-teal-600 dark:text-teal-400">.bj</span>
                   </span>
-                  <div className="flex h-2.5 w-4 rounded-xs overflow-hidden shadow-xs border border-black/10">
-                    <div className="w-1/3 bg-emerald-600"></div>
-                    <div className="w-1/3 bg-amber-400"></div>
-                    <div className="w-1/3 bg-rose-600"></div>
-                  </div>
+                  <span className="px-1.5 py-0.2 rounded-md bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 font-bold text-[9px] uppercase tracking-wider border border-teal-200 dark:border-teal-800">
+                    Bénin
+                  </span>
                 </div>
                 <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest hidden sm:block">
                   Santé Connectée • Bénin

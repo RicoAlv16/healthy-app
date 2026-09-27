@@ -86,10 +86,12 @@ export default function DigitalHealthCardModal({
           <div className="flex items-start justify-between relative z-10">
             <div>
               <div className="flex items-center gap-2">
-                <div className="flex h-3 w-5 rounded-xs overflow-hidden border border-white/20">
-                  <div className="w-1/3 bg-emerald-500"></div>
-                  <div className="w-1/3 bg-amber-400"></div>
-                  <div className="w-1/3 bg-rose-600"></div>
+                <div className="flex h-3 w-5 rounded-xs overflow-hidden border border-white/20 shadow-xs" title="Drapeau de la République du Bénin">
+                  <div className="w-2/5 bg-[#008751]"></div>
+                  <div className="w-3/5 flex flex-col">
+                    <div className="h-1/2 bg-[#FCD116]"></div>
+                    <div className="h-1/2 bg-[#E8112D]"></div>
+                  </div>
                 </div>
                 <span className="text-[11px] font-black tracking-widest text-teal-300 uppercase">
                   RÉPUBLIQUE DU BÉNIN
