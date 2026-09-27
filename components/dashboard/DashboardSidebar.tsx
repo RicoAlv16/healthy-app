@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SafeUser } from "@/lib/db";
@@ -19,11 +19,11 @@ import {
 } from "lucide-react";
 
 interface SidebarLink {
+  id: string;
   label: string;
   href?: string;
   onClick?: () => void;
   icon: React.ComponentType<{ className?: string }>;
-  highlight?: boolean;
 }
 
 interface DashboardSidebarProps {
@@ -34,35 +34,42 @@ interface DashboardSidebarProps {
 
 export default function DashboardSidebar({ user, onOpenCard, onOpenBookAppointment }: DashboardSidebarProps) {
   const pathname = usePathname();
+  const [activeId, setActiveId] = useState<string>("overview");
 
   const scrollToSection = (id: string) => {
+    setActiveId(id);
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
+  const scrollToTop = () => {
+    setActiveId("overview");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const getPatientLinks = (): SidebarLink[] => [
-    { label: "Vue Générale", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Prendre un Rendez-vous", onClick: onOpenBookAppointment, icon: Calendar, highlight: true },
-    { label: "Mes Rendez-vous & Visios", onClick: () => scrollToSection("appointments"), icon: Calendar },
-    { label: "Carte Sanitaire ANIP", onClick: onOpenCard, icon: CreditCard },
-    { label: "Signes Vitaux", onClick: () => scrollToSection("vitals"), icon: Activity },
-    { label: "Mes E-Ordonnances", onClick: () => scrollToSection("prescriptions"), icon: FileText },
-    { label: "Carnet Vaccinal PEV", onClick: () => scrollToSection("vaccines"), icon: Syringe },
+    { id: "overview", label: "Vue Générale", onClick: scrollToTop, icon: LayoutDashboard },
+    { id: "book-appointment", label: "Prendre un Rendez-vous", onClick: () => { setActiveId("book-appointment"); onOpenBookAppointment?.(); }, icon: Calendar },
+    { id: "appointments", label: "Mes Rendez-vous & Visios", onClick: () => scrollToSection("appointments"), icon: Calendar },
+    { id: "card", label: "Carte Sanitaire ANIP", onClick: () => { setActiveId("card"); onOpenCard?.(); }, icon: CreditCard },
+    { id: "vitals", label: "Signes Vitaux", onClick: () => scrollToSection("vitals"), icon: Activity },
+    { id: "prescriptions", label: "Mes E-Ordonnances", onClick: () => scrollToSection("prescriptions"), icon: FileText },
+    { id: "vaccines", label: "Carnet Vaccinal PEV", onClick: () => scrollToSection("vaccines"), icon: Syringe },
   ];
 
   const getDoctorLinks = (): SidebarLink[] => [
-    { label: "Tableau de Bord", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Dossiers Patients NPI", onClick: () => scrollToSection("search"), icon: Stethoscope },
-    { label: "Consultations & Visios", onClick: () => scrollToSection("appointments"), icon: Calendar, highlight: true },
-    { label: "Prescriptions Émises", onClick: () => scrollToSection("prescriptions"), icon: FileText },
+    { id: "overview", label: "Tableau de Bord", onClick: scrollToTop, icon: LayoutDashboard },
+    { id: "search", label: "Dossiers Patients NPI", onClick: () => scrollToSection("search"), icon: Stethoscope },
+    { id: "appointments", label: "Consultations & Visios", onClick: () => scrollToSection("appointments"), icon: Calendar },
+    { id: "prescriptions", label: "Prescriptions Émises", onClick: () => scrollToSection("prescriptions"), icon: FileText },
   ];
 
   const getPharmacyLinks = (): SidebarLink[] => [
-    { label: "Guichet Officine", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Valider une Ordonnance", onClick: () => scrollToSection("scanner"), icon: ScanLine, highlight: true },
-    { label: "Délivrances Traitées", onClick: () => scrollToSection("history"), icon: FileCheck },
+    { id: "overview", label: "Guichet Officine", onClick: scrollToTop, icon: LayoutDashboard },
+    { id: "scanner", label: "Valider une Ordonnance", onClick: () => scrollToSection("scanner"), icon: ScanLine },
+    { id: "history", label: "Délivrances Traitées", onClick: () => scrollToSection("history"), icon: FileCheck },
   ];
 
   const links: SidebarLink[] =
@@ -89,37 +96,40 @@ export default function DashboardSidebar({ user, onOpenCard, onOpenBookAppointme
 
         {/* Liens de navigation */}
         <nav className="space-y-1">
-          {links.map((link, idx) => {
+          {links.map((link) => {
             const Icon = link.icon;
+            const isActive = activeId === link.id;
+
             if (link.onClick) {
               return (
                 <button
-                  key={idx}
+                  key={link.id}
+                  type="button"
                   onClick={link.onClick}
                   className={`flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
-                    link.highlight
-                      ? "bg-teal-600 text-white hover:bg-teal-500 shadow-md shadow-teal-600/20 active:scale-95"
+                    isActive
+                      ? "bg-teal-600 text-white shadow-md shadow-teal-600/20 active:scale-95"
                       : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${link.highlight ? "text-white" : "text-teal-600"}`} />
+                  <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-white" : "text-teal-600 dark:text-teal-400"}`} />
                   <span>{link.label}</span>
                 </button>
               );
             }
 
-            const isActive = pathname === link.href;
             return (
               <Link
-                key={idx}
+                key={link.id}
                 href={link.href || "/dashboard"}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+                onClick={() => setActiveId(link.id)}
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                   isActive
-                    ? "bg-slate-900 text-white dark:bg-teal-600 dark:text-white shadow-xs"
+                    ? "bg-teal-600 text-white shadow-md shadow-teal-600/20"
                     : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400"}`} />
+                <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-white" : "text-teal-600 dark:text-teal-400"}`} />
                 <span>{link.label}</span>
               </Link>
             );

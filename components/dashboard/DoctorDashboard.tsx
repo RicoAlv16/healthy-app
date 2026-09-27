@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SafeUser, AppointmentRecord, PrescriptionRecord, VitalSignRecord, VaccinationRecord, EmergencyAccessLogRecord } from "@/lib/db";
 import { 
   Stethoscope, 
@@ -12,10 +12,20 @@ import {
   ShieldAlert,
   Syringe,
   Phone,
-  Video
+  Video,
+  WifiOff,
+  RefreshCw,
+  Zap,
+  CheckCircle2
 } from "lucide-react";
 import BreakGlassModal, { SmsAlertInfo } from "./BreakGlassModal";
 import TeleconsultationModal from "./TeleconsultationModal";
+import { 
+  saveOfflinePrescription, 
+  getOfflinePrescriptions, 
+  syncOfflinePrescriptions, 
+  OfflinePrescription 
+} from "@/lib/offlineQueue";
 
 interface DoctorDashboardProps {
   user: SafeUser;
@@ -76,6 +86,66 @@ export default function DoctorDashboard({
   const [creatingPrescription, setCreatingPrescription] = useState(false);
   const [prescriptionSuccess, setPrescriptionSuccess] = useState<string | null>(null);
 
+  // File d'attente Offline / Mode 2G Frugal (Tournée Rurale)
+  const [offlinePrescriptions, setOfflinePrescriptions] = useState<OfflinePrescription[]>([]);
+  const [syncingOffline, setSyncingOffline] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+
+  useEffect(() => {
+    setIsOfflineMode(typeof window !== "undefined" && !navigator.onLine);
+    setOfflinePrescriptions(getOfflinePrescriptions());
+
+    const handleOnline = async () => {
+      setIsOfflineMode(false);
+      const queue = getOfflinePrescriptions();
+      if (queue.length > 0) {
+        setSyncingOffline(true);
+        const { successCount } = await syncOfflinePrescriptions();
+        setSyncingOffline(false);
+        if (successCount > 0) {
+          setSyncNotice(`⚡ Réseau rétabli : ${successCount} ordonnance(s) synchronisée(s) avec succès avec le serveur central !`);
+          onRefresh();
+          setTimeout(() => setSyncNotice(null), 5000);
+        }
+      }
+      setOfflinePrescriptions(getOfflinePrescriptions());
+    };
+
+    const handleOffline = () => {
+      setIsOfflineMode(true);
+      setOfflinePrescriptions(getOfflinePrescriptions());
+    };
+
+    const handleQueueChanged = () => {
+      setOfflinePrescriptions(getOfflinePrescriptions());
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("care-offline-queue-changed", handleQueueChanged);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("care-offline-queue-changed", handleQueueChanged);
+    };
+  }, [onRefresh]);
+
+  const handleManualSync = async () => {
+    setSyncingOffline(true);
+    const { successCount, failedCount } = await syncOfflinePrescriptions();
+    setSyncingOffline(false);
+    if (successCount > 0) {
+      setSyncNotice(`✅ ${successCount} ordonnance(s) synchronisée(s) avec succès avec le serveur central !`);
+      onRefresh();
+      setTimeout(() => setSyncNotice(null), 5000);
+    } else if (failedCount > 0) {
+      alert("La synchronisation a échoué. Vérifiez votre connexion Internet.");
+    }
+    setOfflinePrescriptions(getOfflinePrescriptions());
+  };
+
   const handleSearchPatient = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!searchQuery.trim()) return;
@@ -130,6 +200,24 @@ export default function DoctorDashboard({
     setCreatingPrescription(true);
     setPrescriptionSuccess(null);
 
+    // Détection immédiate du mode hors-ligne / 2G Frugal
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      const saved = saveOfflinePrescription({
+        patientId: prescripPatientId,
+        medications,
+      });
+      setPrescriptionSuccess(
+        `⚡ Mode Frugal 2G / Hors-Ligne : Ordonnance ${saved.tempCode} signée et sécurisée localement. Elle sera transmise automatiquement dès reconnexion au réseau.`
+      );
+      setOfflinePrescriptions(getOfflinePrescriptions());
+      setCreatingPrescription(false);
+      setTimeout(() => {
+        setIsPrescriptionModalOpen(false);
+        setPrescriptionSuccess(null);
+      }, 2500);
+      return;
+    }
+
     try {
       const res = await fetch("/api/prescriptions", {
         method: "POST",
@@ -154,8 +242,20 @@ export default function DoctorDashboard({
         setPrescriptionSuccess(null);
       }, 1500);
     } catch (err) {
-      console.error("Erreur création ordonnance:", err);
-      alert("Erreur réseau");
+      console.warn("Échec réseau lors de l'émission, bascule automatique en mode Frugal 2G / Local:", err);
+      // Fallback automatique si la connexion lâche pendant l'envoi (2G instable)
+      const saved = saveOfflinePrescription({
+        patientId: prescripPatientId,
+        medications,
+      });
+      setPrescriptionSuccess(
+        `⚡ Connexion instable (2G Frugal) : Ordonnance ${saved.tempCode} sécurisée localement sur l'appareil. Synchronisation différée programmée.`
+      );
+      setOfflinePrescriptions(getOfflinePrescriptions());
+      setTimeout(() => {
+        setIsPrescriptionModalOpen(false);
+        setPrescriptionSuccess(null);
+      }, 2500);
     } finally {
       setCreatingPrescription(false);
     }
@@ -502,18 +602,85 @@ export default function DoctorDashboard({
 
         {/* Ordonnances délivrées par le médecin */}
         <div id="prescriptions" className="scroll-mt-24 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+          
+          {syncNotice && (
+            <div className="mb-4 p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center gap-2 animate-fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{syncNotice}</span>
+            </div>
+          )}
+
+          {offlinePrescriptions.length > 0 && (
+            <div className="mb-4 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                <Zap className="w-4 h-4 text-amber-500 shrink-0 animate-pulse" />
+                <span>
+                  <strong>Mode Frugal / Tournée Rurale :</strong> {offlinePrescriptions.length} ordonnance(s) sécurisée(s) en local.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleManualSync}
+                disabled={syncingOffline}
+                className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-all shadow-xs disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${syncingOffline ? "animate-spin" : ""}`} />
+                <span>{syncingOffline ? "Synchronisation..." : "Synchroniser"}</span>
+              </button>
+            </div>
+          )}
+
           <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
             <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <FilePlus className="w-5 h-5 text-teal-600" />
               <span>Dernières Ordonnances Émises</span>
             </h3>
             <span className="text-xs font-bold text-teal-600">
-              {prescriptions.length} émise(s)
+              {prescriptions.length + offlinePrescriptions.length} émise(s)
             </span>
           </div>
 
           <div className="mt-4 space-y-3">
-            {prescriptions.length === 0 ? (
+            {/* Ordonnances en attente de synchronisation (Saisies en mode Frugal 2G) */}
+            {offlinePrescriptions.map((op) => (
+              <div key={op.id} className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-300/60 dark:border-amber-700/60 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-black text-amber-700 dark:text-amber-400">{op.tempCode}</span>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-400/40 flex items-center gap-1">
+                        <Zap className="w-2.5 h-2.5" />
+                        Local (2G Frugal)
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">
+                      Patient ID : {op.patientId}
+                    </p>
+                    <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 font-medium">
+                      Enregistrée hors-ligne le {new Date(op.createdAt).toLocaleTimeString("fr-BJ", { hour: "2-digit", minute: "2-digit" })} • En attente de réseau
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleManualSync}
+                    disabled={syncingOffline}
+                    className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/40 dark:hover:bg-amber-800/60 text-amber-800 dark:text-amber-200 text-[10px] font-bold border border-amber-300 dark:border-amber-700 transition-colors"
+                  >
+                    Synchro différée
+                  </button>
+                </div>
+                <div className="mt-2 pt-2 border-t border-amber-200/60 dark:border-amber-800/40 text-xs text-slate-600 dark:text-slate-300">
+                  {op.medications.map((m, idx) => (
+                    <div key={idx} className="flex justify-between text-[11px]">
+                      <span>• {m.name} ({m.dosage})</span>
+                      <span className="text-slate-400">{m.duration}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {prescriptions.length === 0 && offlinePrescriptions.length === 0 ? (
               <p className="py-6 text-center text-slate-400 text-xs">Aucune ordonnance émise récemment.</p>
             ) : (
               prescriptions.map((p) => (
@@ -556,9 +723,19 @@ export default function DoctorDashboard({
       {isPrescriptionModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
           <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800">
-              Émission d&apos;une Ordonnance Électronique Souveraine
-            </h3>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                Émission d&apos;une Ordonnance Électronique Souveraine
+              </h3>
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                isOfflineMode 
+                  ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/40 animate-pulse" 
+                  : "bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20"
+              }`} title="Fonctionne 100% hors-ligne avec synchronisation automatique">
+                {isOfflineMode ? <WifiOff className="w-3 h-3 text-amber-600" /> : <Zap className="w-3 h-3 text-teal-600" />}
+                <span>{isOfflineMode ? "Mode 2G Frugal Actif" : "Résilience 2G / Frugal"}</span>
+              </span>
+            </div>
 
             {prescriptionSuccess && (
               <div className="my-3 p-3 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">

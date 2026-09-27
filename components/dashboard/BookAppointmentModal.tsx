@@ -11,9 +11,12 @@ import {
   CheckCircle2, 
   AlertCircle, 
   Stethoscope, 
-  Phone
+  Phone,
+  Zap,
+  WifiOff
 } from "lucide-react";
 import { AppointmentRecord } from "@/lib/db";
+import { saveOfflineAppointment } from "@/lib/offlineQueue";
 
 interface DoctorOption {
   id: string;
@@ -153,9 +156,66 @@ export default function BookAppointmentModal({
     setSubmitting(true);
     setError(null);
 
-    try {
-      const combinedDateTime = new Date(`${selectedDate}T${selectedTime}:00`);
+    const combinedDateTime = new Date(`${selectedDate}T${selectedTime}:00`);
+    const isOffline = typeof window !== "undefined" && !navigator.onLine;
 
+    if (isOffline) {
+      const offlineAppt = saveOfflineAppointment({
+        doctorId: selectedDoctorId,
+        dateTime: combinedDateTime.toISOString(),
+        type,
+        facility: facility || (type === "teleconsultation" ? "Téléconsultation sécurisée Care.bj" : "Centre Hospitalier CNHU-HKM"),
+        notes: notes.trim() || undefined,
+      });
+
+      const fallbackSms: SmsAlert = {
+        sentTo: userPhone || selectedDoctor?.phone || "+229 97 00 00 00",
+        message: "⚡ CARE.BJ FRUGAL 2G : Votre rendez-vous a été enregistré localement sur votre appareil. Il sera automatiquement synchronisé dès que vous retrouverez du réseau.",
+      };
+
+      setSuccessInfo({
+        appointment: {
+          id: offlineAppt.id,
+          patientId: "offline_patient",
+          doctorId: selectedDoctorId,
+          dateTime: offlineAppt.dateTime,
+          type: offlineAppt.type as any,
+          facility: offlineAppt.facility,
+          notes: offlineAppt.notes || null,
+          status: "scheduled",
+          createdAt: offlineAppt.createdAt,
+          doctor: selectedDoctor ? {
+            id: selectedDoctor.id,
+            firstName: selectedDoctor.firstName,
+            lastName: selectedDoctor.lastName,
+            professionalId: selectedDoctor.professionalId || null,
+          } : undefined
+        },
+        smsAlert: fallbackSms,
+      });
+
+      setTimeout(() => {
+        onSuccess(
+          {
+            id: offlineAppt.id,
+            patientId: "offline_patient",
+            doctorId: selectedDoctorId,
+            dateTime: offlineAppt.dateTime,
+            type: offlineAppt.type as any,
+            facility: offlineAppt.facility,
+            notes: offlineAppt.notes || null,
+            status: "scheduled",
+            createdAt: offlineAppt.createdAt,
+          },
+          fallbackSms
+        );
+        onClose();
+        setSuccessInfo(null);
+      }, 2500);
+      return;
+    }
+
+    try {
       const res = await fetch("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -186,8 +246,39 @@ export default function BookAppointmentModal({
         setSuccessInfo(null);
       }, 2000);
     } catch (err) {
-      console.error("Erreur création rendez-vous:", err);
-      setError("Erreur de connexion au serveur.");
+      console.warn("Échec réseau lors de la prise de RDV, bascule automatique 2G Frugal:", err);
+      const offlineAppt = saveOfflineAppointment({
+        doctorId: selectedDoctorId,
+        dateTime: combinedDateTime.toISOString(),
+        type,
+        facility: facility || (type === "teleconsultation" ? "Téléconsultation sécurisée Care.bj" : "Centre Hospitalier CNHU-HKM"),
+        notes: notes.trim() || undefined,
+      });
+
+      const fallbackSms: SmsAlert = {
+        sentTo: userPhone || selectedDoctor?.phone || "+229 97 00 00 00",
+        message: "⚡ CARE.BJ FRUGAL 2G (Connexion instable) : Votre demande a été sécurisée sur votre téléphone et sera envoyée dès le retour du réseau.",
+      };
+
+      setSuccessInfo({
+        appointment: {
+          id: offlineAppt.id,
+          patientId: "offline_patient",
+          doctorId: selectedDoctorId,
+          dateTime: offlineAppt.dateTime,
+          type: offlineAppt.type as any,
+          facility: offlineAppt.facility,
+          notes: offlineAppt.notes || null,
+          status: "scheduled",
+          createdAt: offlineAppt.createdAt,
+        },
+        smsAlert: fallbackSms,
+      });
+
+      setTimeout(() => {
+        onClose();
+        setSuccessInfo(null);
+      }, 2500);
     } finally {
       setSubmitting(false);
     }
@@ -206,9 +297,15 @@ export default function BookAppointmentModal({
               <Calendar className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                Prendre un Rendez-vous Médical
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                  Prendre un Rendez-vous Médical
+                </h3>
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-400/30">
+                  <Zap className="w-2.5 h-2.5" />
+                  Prêt 2G Frugal
+                </span>
+              </div>
               <p className="text-xs text-slate-500">
                 Portail National e-Santé Bénin • Confirmation instantanée par SMS
               </p>
